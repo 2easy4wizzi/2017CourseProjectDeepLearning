@@ -13,7 +13,7 @@ sys.path.insert(0, './multi-class-text-classification-cnn-rnn/')
 import data_helper
 from text_cnn_rnn import TextCNNRNN
 PRO_FLD = './multi-class-text-classification-cnn-rnn/'
-TRA_FLD = 'trained_results_1516404693/'
+TRA_FLD = 'trained_results_1532513053/'
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -33,8 +33,10 @@ def load_test_data(test_file, labels):
     df = pd.read_csv(test_file, sep='|')
     select = ['Descript']
 
-    df = df.dropna(axis=0, how='any', subset=select)
-    test_examples = df[select[0]].apply(lambda x: data_helper.clean_str(x).split(' ')).tolist()
+    df = df.dropna(axis=0, how='any')
+    print(df.columns[0])
+    test_examples = df.columns[0].apply(lambda x: data_helper.clean_str(x).split(' ')).tolist()
+    # test_examples = df[select[0]].apply(lambda x: data_helper.clean_str(x).split(' ')).tolist()
 
     num_labels = len(labels)
     one_hot = np.zeros((num_labels, num_labels), int)
@@ -72,8 +74,9 @@ def predict_unseen_data():
     # sys.exit()
     if not trained_dir.endswith('/'):
         trained_dir += '/'
-    test_file = sys.argv[2]
-
+    # test_file = sys.argv[2]
+    test_file =  PRO_FLD + 'data/train.csv.zip'
+    print test_file
     params, words_index, labels, embedding_mat = load_trained_params(trained_dir)
     x_, y_, df = load_test_data(test_file, labels)
     x_ = data_helper.pad_sentences(x_, forced_sequence_length=params['sequence_length'])
@@ -84,7 +87,7 @@ def predict_unseen_data():
         y_test = np.asarray(y_)
 
     timestamp = trained_dir.split('/')[-2].split('_')[-1]
-    predicted_dir = './predicted_results_' + timestamp + '/'
+    predicted_dir = PRO_FLD + 'predicted_results_' + timestamp + '/'
     if os.path.exists(predicted_dir):
         shutil.rmtree(predicted_dir)
     os.makedirs(predicted_dir)
