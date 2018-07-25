@@ -4,4 +4,5 @@ cr/.idea/*
 cr/venv/*
 0multi-class-text-classification-cnn-rnn-master/.idea/*
 cr/checkpoints_1532544430/*
-cr/__pycache__/text_cnn_rnn.cpython-36.pyc
+cr/__pycache__/*
+cr/trained_results_1532544430/*
