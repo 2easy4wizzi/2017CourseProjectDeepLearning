@@ -1,0 +1,2 @@
+finish counting for each class (currently for all combined)
+run new data "input_parsed.csv.zip"

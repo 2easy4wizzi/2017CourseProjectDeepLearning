@@ -264,13 +264,11 @@ def train_cnn_rnn():  # TRAIN
                         count = 0
                         count_good = 0
                         for p in predictions:
-                            # if p == y_dev_batch[count]:
-                            #     count_good += 1
-                            print(p)
-                            print(y_dev_batch[count])
-                            break
+                            # print(labels[p], labels[np.argmax(y_dev_batch[count])])
+                            if labels[p] == labels[np.argmax(y_dev_batch[count])]:
+                                count_good += 1
                             count += 1
-                        print(acc, num_dev_correct, count_good, count)
+                        print(acc, num_dev_correct, count_good, count, (count_good/count))
                         total_dev_correct += num_dev_correct
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
