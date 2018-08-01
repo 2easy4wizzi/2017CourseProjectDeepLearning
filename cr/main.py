@@ -23,6 +23,7 @@ logging.getLogger().setLevel(logging.INFO)
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 IS_TRAIN = True
+TRAIN_FILE_PATH = PRO_FLD + 'data/parsed_input.csv.zip'
 TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
 
 params = {}
@@ -69,6 +70,15 @@ def load_embeddings(vocabulary):
 def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None):
     # print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     """Pad setences during training or prediction"""
+    # longest_sen = ""
+    # max_found = 0
+    # for sen in sentences:
+    #     if len(sen) > max_found:
+    #         longest_sen = sen
+    #         max_found = len(sen)
+    # print(max_found)
+    # print(longest_sen)
+
     if forced_sequence_length is None:  # Train
         sequence_length = max(len(x) for x in sentences)
     else:  # Prediction
@@ -251,6 +261,16 @@ def train_cnn_rnn():  # TRAIN
                     for dev_batch in dev_batches:
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
+                        count = 0
+                        count_good = 0
+                        for p in predictions:
+                            # if p == y_dev_batch[count]:
+                            #     count_good += 1
+                            print(p)
+                            print(y_dev_batch[count])
+                            break
+                            count += 1
+                        print(acc, num_dev_correct, count_good, count)
                         total_dev_correct += num_dev_correct
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
