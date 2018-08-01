@@ -13,10 +13,12 @@ import tensorflow as tf
 # from builtins import enumerate
 from sklearn.model_selection import train_test_split
 import sys
+
 sys.path.insert(0, './cr/')
 from text_cnn_rnn import TextCNNRNN
-# import logging
-# logging.getLogger().setLevel(print)
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
@@ -56,23 +58,23 @@ def clean_str(s):  # DATA
 
 
 def load_embeddings(vocabulary):
-    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     word_embeddings = {}
     for word in vocabulary:
         word_embeddings[word] = np.random.uniform(-0.25, 0.25, 300)
-    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return word_embeddings
 
 
 def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None):
-    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     """Pad setences during training or prediction"""
     if forced_sequence_length is None:  # Train
         sequence_length = max(len(x) for x in sentences)
     else:  # Prediction
         print('This is prediction, reading the trained sequence length')
         sequence_length = forced_sequence_length
-    print('The maximum length is {}'.format(sequence_length))
+    print('The sentences length (after padding) will be {}(length of the longest sentence)'.format(sequence_length))
     padded_sentences = []
     for i in range(len(sentences)):
         sentence = sentences[i]
@@ -85,20 +87,16 @@ def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None)
         else:
             padded_sentence = sentence + [padding_word] * num_padding
         padded_sentences.append(padded_sentence)
-    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return padded_sentences
 
 
 def build_vocab(sentences):
-    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     word_counts = Counter(itertools.chain(*sentences))
     vocabulary_inv = [word[0] for word in word_counts.most_common()]
     vocabulary = {word: index for index, word in enumerate(vocabulary_inv)}
-    # print(len(vocabulary))
-    # print(vocabulary)
-    # print(len(vocabulary_inv))
-    # print(vocabulary_inv)
-    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+    # print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return vocabulary, vocabulary_inv
 
 
@@ -237,7 +235,9 @@ def train_cnn_rnn():  # TRAIN
             # Training starts here
             train_batches = batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
             best_accuracy, best_at_step = 0, 0
-            print("---There will be {} steps for each epoch".format(len(x_train)/128))
+            number_of_steps_in_total = len(x_train) / 128 + 1  # steps
+            number_of_steps_in_total *= params['num_epochs']
+            logging.info("---There will be {} steps total".format(number_of_steps_in_total))
             # Train the model with x_train and y_train
             for train_batch in train_batches:
                 x_train_batch, y_train_batch = zip(*train_batch)
@@ -255,11 +255,11 @@ def train_cnn_rnn():  # TRAIN
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
 
-                    if accuracy >= best_accuracy:
+                    if accuracy > best_accuracy:
                         best_accuracy, best_at_step = accuracy, current_step
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-                        print('    Saved model {} at step {}'.format(path, best_at_step))
-                        print('    Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
+                        logging.info('    Saved model {} at step {}'.format(path, best_at_step))
+                        logging.info('    Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
             print('Training is complete, testing the best model on x_test and y_test')
 
             # Save the model files to trained_dir. predict.py needs trained model files.
