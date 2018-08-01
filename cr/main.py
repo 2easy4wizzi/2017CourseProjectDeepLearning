@@ -9,15 +9,32 @@ import json
 from collections import Counter
 import numpy as np
 import tensorflow as tf
-from builtins import enumerate
+# pip.main(['install', 'builtins '])
+# from builtins import enumerate
 from sklearn.model_selection import train_test_split
+import sys
+sys.path.insert(0, './cr/')
 from text_cnn_rnn import TextCNNRNN
-import logging
-logging.getLogger().setLevel(logging.INFO)
+# import logging
+# logging.getLogger().setLevel(print)
 
 PRO_FLD = ''
-TRA_FLD = 'trained_results_1532544430/'
-TRAIN = False
+TRA_FLD = 'trained_results_1533109035/'
+IS_TRAIN = True
+TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
+
+params = {}
+params['batch_size'] = 128
+params['dropout_keep_prob'] = 0.5
+params['embedding_dim'] = 300
+params['evaluate_every'] = 1
+params['filter_sizes'] = "3,4,5"
+params['hidden_unit'] = 300
+params['l2_reg_lambda'] = 0.0
+params['max_pool_size'] = 4
+params['non_static'] = False
+params['num_epochs'] = 1
+params['num_filters'] = 32
 
 
 def clean_str(s):  # DATA
@@ -39,39 +56,49 @@ def clean_str(s):  # DATA
 
 
 def load_embeddings(vocabulary):
+    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     word_embeddings = {}
     for word in vocabulary:
         word_embeddings[word] = np.random.uniform(-0.25, 0.25, 300)
+    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return word_embeddings
 
 
 def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None):
+    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     """Pad setences during training or prediction"""
     if forced_sequence_length is None:  # Train
         sequence_length = max(len(x) for x in sentences)
     else:  # Prediction
-        logging.critical('This is prediction, reading the trained sequence length')
+        print('This is prediction, reading the trained sequence length')
         sequence_length = forced_sequence_length
-    logging.critical('The maximum length is {}'.format(sequence_length))
+    print('The maximum length is {}'.format(sequence_length))
     padded_sentences = []
     for i in range(len(sentences)):
         sentence = sentences[i]
         num_padding = sequence_length - len(sentence)
 
         if num_padding < 0:  # Prediction: cut off the sentence if it is longer than the sequence length
-            logging.info('This sentence has to be cut off because it is longer than trained sequence length')
+            print('This sentence has to be cut off because it is longer than trained sequence length')
             exit(0)
             padded_sentence = sentence[0:sequence_length]
         else:
             padded_sentence = sentence + [padding_word] * num_padding
         padded_sentences.append(padded_sentence)
+    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return padded_sentences
 
 
 def build_vocab(sentences):
+    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     word_counts = Counter(itertools.chain(*sentences))
     vocabulary_inv = [word[0] for word in word_counts.most_common()]
     vocabulary = {word: index for index, word in enumerate(vocabulary_inv)}
+    # print(len(vocabulary))
+    # print(vocabulary)
+    # print(len(vocabulary_inv))
+    # print(vocabulary_inv)
+    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return vocabulary, vocabulary_inv
 
 
@@ -91,9 +118,11 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
+    return
 
 
 def load_data(filename):
+    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
     df = pd.read_csv(filename, compression='zip')
     selected = ['Category', 'Descript']
     non_selected = list(set(df.columns) - set(selected))
@@ -116,18 +145,13 @@ def load_data(filename):
 
     x = np.array([[vocabulary[word] for word in sentence] for sentence in x_raw])
     y = np.array(y_raw)
+    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
     return x, y, vocabulary, vocabulary_inv, df, labels  # DATA END
 
 
 def train_cnn_rnn():  # TRAIN
-    # input_file = sys.argv[1]
-    input_file = PRO_FLD + 'data/train.csv.zip'
-    x_, y_, vocabulary, vocabulary_inv, df, labels = load_data(input_file)
-
-    # training_config = sys.argv[2]
-    training_config = PRO_FLD + 'training_config.json'
-    params = json.loads(open(training_config).read())
-
+    print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+    x_, y_, vocabulary, vocabulary_inv, df, labels = load_data(TRAIN_FILE_PATH)
     # Assign a 300 dimension vector to each word
     word_embeddings = load_embeddings(vocabulary)
     embedding_mat = [word_embeddings[word] for index, word in enumerate(vocabulary_inv)]
@@ -139,8 +163,8 @@ def train_cnn_rnn():  # TRAIN
     # Split the train set into train set and dev set
     x_train, x_dev, y_train, y_dev = train_test_split(x, y, test_size=0.1)
 
-    logging.info('x_train: {}, x_dev: {}, x_test: {}'.format(len(x_train), len(x_dev), len(x_test)))
-    logging.info('y_train: {}, y_dev: {}, y_test: {}'.format(len(y_train), len(y_dev), len(y_test)))
+    print('x_train: {}, x_dev: {}, x_test: {}'.format(len(x_train), len(x_dev), len(x_test)))
+    print('y_train: {}, y_dev: {}, y_test: {}'.format(len(y_train), len(y_dev), len(y_test)))
 
     # Create a directory, everything related to the training will be saved in this directory
     timestamp = str(int(time.time()))
@@ -213,13 +237,12 @@ def train_cnn_rnn():  # TRAIN
             # Training starts here
             train_batches = batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
             best_accuracy, best_at_step = 0, 0
-
+            print("---There will be {} steps for each epoch".format(len(x_train)/128))
             # Train the model with x_train and y_train
             for train_batch in train_batches:
                 x_train_batch, y_train_batch = zip(*train_batch)
                 train_step(x_train_batch, y_train_batch)
                 current_step = tf.train.global_step(sess, global_step)
-
                 # Evaluate the model with x_dev and y_dev
                 if current_step % params['evaluate_every'] == 0:
                     dev_batches = batch_iter(list(zip(x_dev, y_dev)), params['batch_size'], 1)
@@ -230,14 +253,14 @@ def train_cnn_rnn():  # TRAIN
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
                         total_dev_correct += num_dev_correct
                     accuracy = float(total_dev_correct) / len(y_dev)
-                    logging.info('Accuracy on dev set: {}'.format(accuracy))
+                    print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
 
                     if accuracy >= best_accuracy:
                         best_accuracy, best_at_step = accuracy, current_step
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-                        logging.critical('Saved model {} at step {}'.format(path, best_at_step))
-                        logging.critical('Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
-            logging.critical('Training is complete, testing the best model on x_test and y_test')
+                        print('    Saved model {} at step {}'.format(path, best_at_step))
+                        print('    Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
+            print('Training is complete, testing the best model on x_test and y_test')
 
             # Save the model files to trained_dir. predict.py needs trained model files.
             saver.save(sess, trained_dir + "best_model.ckpt")
@@ -250,7 +273,7 @@ def train_cnn_rnn():  # TRAIN
                 x_test_batch, y_test_batch = zip(*test_batch)
                 acc, loss, num_test_correct, predictions = dev_step(x_test_batch, y_test_batch)
                 total_test_correct += int(num_test_correct)
-            logging.critical('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
+            print('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
 
     # Save trained parameters and files since predict.py needs them
     with open(trained_dir + 'words_index.json', 'w') as outfile:
@@ -263,144 +286,151 @@ def train_cnn_rnn():  # TRAIN
     params['sequence_length'] = x_train.shape[1]
     with open(trained_dir + 'trained_parameters.json', 'w') as outfile:
         json.dump(params, outfile, indent=4, sort_keys=True, ensure_ascii=False)
+    print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+    return
 
 
-def load_trained_params(trained_dir):
-    params = json.loads(open(trained_dir + 'trained_parameters.json').read())
-    words_index = json.loads(open(trained_dir + 'words_index.json').read())
-    labels = json.loads(open(trained_dir + 'labels.json').read())
-
-    with open(trained_dir + 'embeddings.pickle', 'rb') as input_file:
-        fetched_embedding = pickle.load(input_file)
-    embedding_mat = np.array(fetched_embedding, dtype=np.float32)
-    return params, words_index, labels, embedding_mat
-
-
-def load_test_data(test_file, labels):
-    df = pd.read_csv(test_file)
-    select = ['Descript']
-
-    df = df.dropna(axis=0, how='any', subset=['Descript'])
-    test_examples = df[select[0]].apply(lambda x: clean_str(x).split(' ')).tolist()
-
-    num_labels = len(labels)
-    one_hot = np.zeros((num_labels, num_labels), int)
-    np.fill_diagonal(one_hot, 1)
-    label_dict = dict(zip(labels, one_hot))
-
-    y_ = None
-    if 'Category' in df.columns:
-        select.append('Category')
-        y_ = df[select[1]].apply(lambda x: label_dict[x]).tolist()
-
-    not_select = list(set(df.columns) - set(select))
-    df = df.drop(not_select, axis=1)
-    return test_examples, y_, df
+# def load_trained_params(trained_dir):
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+#     params = json.loads(open(trained_dir + 'trained_parameters.json').read())
+#     words_index = json.loads(open(trained_dir + 'words_index.json').read())
+#     labels = json.loads(open(trained_dir + 'labels.json').read())
+#
+#     with open(trained_dir + 'embeddings.pickle', 'rb') as input_file:
+#         fetched_embedding = pickle.load(input_file)
+#     embedding_mat = np.array(fetched_embedding, dtype=np.float32)
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+#     return params, words_index, labels, embedding_mat
 
 
-def map_word_to_index(examples, words_index):
-    x_ = []
-    for example in examples:
-        temp = []
-        for word in example:
-            if word in words_index:
-                temp.append(words_index[word])
-            else:
-                temp.append(0)
-        x_.append(temp)
-    return x_
+# def load_test_data(test_file, labels):
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+#     df = pd.read_csv(test_file)
+#     select = ['Descript']
+#
+#     df = df.dropna(axis=0, how='any', subset=['Descript'])
+#     test_examples = df[select[0]].apply(lambda x: clean_str(x).split(' ')).tolist()
+#
+#     num_labels = len(labels)
+#     one_hot = np.zeros((num_labels, num_labels), int)
+#     np.fill_diagonal(one_hot, 1)
+#     label_dict = dict(zip(labels, one_hot))
+#
+#     y_ = None
+#     if 'Category' in df.columns:
+#         select.append('Category')
+#         y_ = df[select[1]].apply(lambda x: label_dict[x]).tolist()
+#
+#     not_select = list(set(df.columns) - set(select))
+#     df = df.drop(not_select, axis=1)
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+#     return test_examples, y_, df
 
 
-def predict_unseen_data():
-    # trained_dir = sys.argv[1]
-    # print(trained_dir)
-    trained_dir = PRO_FLD + TRA_FLD
-    print(trained_dir)
-    # sys.exit()
-    if not trained_dir.endswith('/'):
-        trained_dir += '/'
-    # test_file = sys.argv[2]
-    test_file = PRO_FLD + 'data/train.csv.zip'
+# def map_word_to_index(examples, words_index):
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+#     x_ = []
+#     for example in examples:
+#         temp = []
+#         for word in example:
+#             if word in words_index:
+#                 temp.append(words_index[word])
+#             else:
+#                 temp.append(0)
+#         x_.append(temp)
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+#     return x_
 
-    params, words_index, labels, embedding_mat = load_trained_params(trained_dir)
-    x_, y_, df = load_test_data(test_file, labels)
-    x_ = pad_sentences(x_, forced_sequence_length=params['sequence_length'])
-    x_ = map_word_to_index(x_, words_index)
 
-    x_test, y_test = np.asarray(x_), None
-    if y_ is not None:
-        y_test = np.asarray(y_)
-
-    timestamp = trained_dir.split('/')[-2].split('_')[-1]
-    predicted_dir = PRO_FLD + 'predicted_results_' + timestamp + '/'
-    if os.path.exists(predicted_dir):
-        shutil.rmtree(predicted_dir)
-    os.makedirs(predicted_dir)
-
-    with tf.Graph().as_default():
-        session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
-        sess = tf.Session(config=session_conf)
-        with sess.as_default():
-            cnn_rnn = TextCNNRNN(
-                embedding_mat=embedding_mat,
-                non_static=params['non_static'],
-                hidden_unit=params['hidden_unit'],
-                sequence_length=len(x_test[0]),
-                max_pool_size=params['max_pool_size'],
-                filter_sizes=map(int, params['filter_sizes'].split(",")),
-                num_filters=params['num_filters'],
-                num_classes=len(labels),
-                embedding_size=params['embedding_dim'],
-                l2_reg_lambda=params['l2_reg_lambda'])
-
-            def real_len(batches):
-                return [np.ceil(np.argmin(batch + [0]) * 1.0 / params['max_pool_size']) for batch in batches]
-
-            def predict_step(x_batch):
-                feed_dict = {
-                    cnn_rnn.input_x: x_batch,
-                    cnn_rnn.dropout_keep_prob: 1.0,
-                    cnn_rnn.batch_size: len(x_batch),
-                    cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
-                    cnn_rnn.real_len: real_len(x_batch),
-                }
-                predictions = sess.run([cnn_rnn.predictions], feed_dict)
-                return predictions
-
-            checkpoint_file = trained_dir + 'best_model.ckpt'
-            saver = tf.train.Saver(tf.all_variables())
-            saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
-            saver.restore(sess, checkpoint_file)
-            logging.critical('{} has been loaded'.format(checkpoint_file))
-
-            batches = batch_iter(list(x_test), params['batch_size'], 1, shuffle=False)
-
-            predictions, predict_labels = [], []
-            for x_batch in batches:
-                batch_predictions = predict_step(x_batch)[0]
-                for batch_prediction in batch_predictions:
-                    predictions.append(batch_prediction)
-                    predict_labels.append(labels[batch_prediction])
-
-            # Save the predictions back to file
-            df['NEW_PREDICTED'] = predict_labels
-            columns = sorted(df.columns, reverse=True)
-            df.to_csv(predicted_dir + 'predictions_all.csv', index=False, columns=columns, sep='|')
-
-            if y_test is not None:
-                y_test = np.array(np.argmax(y_test, axis=1))
-                accuracy = sum(np.array(predictions) == y_test) / float(len(y_test))
-                logging.critical('The prediction accuracy is: {}'.format(accuracy))
-
-            logging.critical('Prediction is complete, all files have been saved: {}'.format(predicted_dir))
+# def predict_unseen_data():
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "start"))
+#     trained_dir = PRO_FLD + TRA_FLD
+#     print(trained_dir)
+#     if not trained_dir.endswith('/'):
+#         trained_dir += '/'
+#     test_file = PRO_FLD + 'data/train.csv.zip'
+#
+#     params, words_index, labels, embedding_mat = load_trained_params(trained_dir)
+#     x_, y_, df = load_test_data(test_file, labels)
+#     x_ = pad_sentences(x_, forced_sequence_length=params['sequence_length'])
+#     x_ = map_word_to_index(x_, words_index)
+#
+#     x_test, y_test = np.asarray(x_), None
+#     if y_ is not None:
+#         y_test = np.asarray(y_)
+#
+#     timestamp = trained_dir.split('/')[-2].split('_')[-1]
+#     predicted_dir = PRO_FLD + 'predicted_results_' + timestamp + '/'
+#     if os.path.exists(predicted_dir):
+#         shutil.rmtree(predicted_dir)
+#     os.makedirs(predicted_dir)
+#
+#     with tf.Graph().as_default():
+#         session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+#         sess = tf.Session(config=session_conf)
+#         with sess.as_default():
+#             cnn_rnn = TextCNNRNN(
+#                 embedding_mat=embedding_mat,
+#                 non_static=params['non_static'],
+#                 hidden_unit=params['hidden_unit'],
+#                 sequence_length=len(x_test[0]),
+#                 max_pool_size=params['max_pool_size'],
+#                 filter_sizes=map(int, params['filter_sizes'].split(",")),
+#                 num_filters=params['num_filters'],
+#                 num_classes=len(labels),
+#                 embedding_size=params['embedding_dim'],
+#                 l2_reg_lambda=params['l2_reg_lambda'])
+#
+#             def real_len(batches):
+#                 return [np.ceil(np.argmin(batch + [0]) * 1.0 / params['max_pool_size']) for batch in batches]
+#
+#             def predict_step(x_batch):
+#                 feed_dict = {
+#                     cnn_rnn.input_x: x_batch,
+#                     cnn_rnn.dropout_keep_prob: 1.0,
+#                     cnn_rnn.batch_size: len(x_batch),
+#                     cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
+#                     cnn_rnn.real_len: real_len(x_batch),
+#                 }
+#                 predictions = sess.run([cnn_rnn.predictions], feed_dict)
+#                 return predictions
+#
+#             checkpoint_file = trained_dir + 'best_model.ckpt'
+#             saver = tf.train.Saver(tf.all_variables())
+#             saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
+#             saver.restore(sess, checkpoint_file)
+#             print('{} has been loaded'.format(checkpoint_file))
+#
+#             batches = batch_iter(list(x_test), params['batch_size'], 1, shuffle=False)
+#
+#             predictions, predict_labels = [], []
+#             for x_batch in batches:
+#                 batch_predictions = predict_step(x_batch)[0]
+#                 for batch_prediction in batch_predictions:
+#                     predictions.append(batch_prediction)
+#                     predict_labels.append(labels[batch_prediction])
+#
+#             # Save the predictions back to file
+#             df['NEW_PREDICTED'] = predict_labels
+#             columns = sorted(df.columns, reverse=True)
+#             df.to_csv(predicted_dir + 'predictions_all.csv', index=False, columns=columns, sep='|')
+#
+#             if y_test is not None:
+#                 y_test = np.array(np.argmax(y_test, axis=1))
+#                 accuracy = sum(np.array(predictions) == y_test) / float(len(y_test))
+#                 print('The prediction accuracy is: {}'.format(accuracy))
+#
+#             print('Prediction is complete, all files have been saved: {}'.format(predicted_dir))
+#     print("function {} {}".format(sys._getframe().f_code.co_name, "exit"))
+#     return
 
 
 if __name__ == '__main__':
-    print("hello")
-    if TRAIN:
-        print("train_cnn_rnn")
+    print("function {} {}".format(__name__, "start"))
+    if IS_TRAIN:
         train_cnn_rnn()
     else:
-        print("predict_unseen_data")
-        predict_unseen_data()
-    print("bye")
+        pass
+        # predict_unseen_data()
+
+    print("function {} {}".format(__name__, "exit"))
