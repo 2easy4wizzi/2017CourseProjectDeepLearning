@@ -1,2 +1,2 @@
-finish counting for each class (currently for all combined)
+add count for all steps
 run new data "input_parsed.csv.zip"
