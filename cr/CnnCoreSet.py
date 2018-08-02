@@ -1,8 +1,8 @@
 import pickle
-import os
-import urllib
-import tarfile
-import zipfile
+# import os
+# import urllib
+# import tarfile
+# import zipfile
 import sys
 import tensorflow as tf
 import numpy as np
@@ -10,6 +10,40 @@ from time import time
 import math
 import matplotlib.pyplot as plt
 # %matplotlib inline
+
+TRAIN_MODE = True  # to load model and test only the test set - set on FALSE
+ADAM_OPTIMIZER = True  # what model will be selected
+SHOULD_SAVE_MODELS = False
+
+SHOULD_PRINT_SHAPES = False
+SHOULD_PRINT_VARS_NAMES = False
+SHOULD_PRINT_START_VARS = True
+SHOULD_PRINT_END_VARS = True
+_BATCH_SIZE = 196
+_EPOCH = 2
+_TRAIN_KEEP_PROB = 0.5
+X_TO_FIRST_CONV_MAPS = 0
+FIRST_CONV_TO_SECOND_CONV_MAPS = 30
+SECOND_CONV_TO_THIRD_CONV_MAPS = 40
+THIRD_CONV_TO_FOURTH_CONV_MAPS = 95
+_IMAGE_SIZE = 32
+_IMAGE_CHANNELS = 3
+_NUM_CLASSES = 10
+BASE_PATH = "hw2Models/{}42350Params/model.ckpt"  # uncomment to save new models
+SAVED_MODELS_PATH = BASE_PATH.format("adamOptimizer")
+OPTIMIZER_STR = "AdamOptimizer"
+
+# if ADAM_OPTIMIZER:
+#     pass
+# else:
+#     SAVED_MODELS_PATH = BASE_PATH.format("GradientOptimizer")
+#     OPTIMIZER_STR = "GradientDescentOptimizer"
+
+# MODEL_PARAMS = 42350
+# MODEL_BEST_ACC_ADAM = 79.01
+# BEST_EPOCH_ADAM = 499
+# MODEL_BEST_ACC_GRAD = 78.9
+# BEST_EPOCH_ADAM = 339
 
 
 def weight_variable(shape_local):
@@ -33,14 +67,14 @@ def max_pool_2x2(x_local):
 def model():
     epsilon = 1e-3
 
-    x = tf.placeholder(tf.float32, shape=[None, _IMAGE_SIZE * _IMAGE_SIZE * _IMAGE_CHANNELS], name='Input')
-    y = tf.placeholder(tf.float32, shape=[None, _NUM_CLASSES], name='Output')
-    x_image = tf.reshape(x, [-1, _IMAGE_SIZE, _IMAGE_SIZE, _IMAGE_CHANNELS], name='images')
+    x_local = tf.placeholder(tf.float32, shape=[None, _IMAGE_SIZE * _IMAGE_SIZE * _IMAGE_CHANNELS], name='Input')
+    y_local = tf.placeholder(tf.float32, shape=[None, _NUM_CLASSES], name='Output')
+    x_image = tf.reshape(x_local, [-1, _IMAGE_SIZE, _IMAGE_SIZE, _IMAGE_CHANNELS], name='images')
     if SHOULD_PRINT_SHAPES and TRAIN_MODE:
         print("x shape: {}".format(x.get_shape()))
         print("y shape: {}".format(y.get_shape()))
         print("x_image shape: {}".format(x_image.get_shape()))
-    keep_prob2 = tf.placeholder(tf.float32, name="keepProbVar")
+    keep_prob2_l = tf.placeholder(tf.float32, name="keepProbVar")
 
     # first layer - conv
     w2 = weight_variable([3, 3, _IMAGE_CHANNELS, FIRST_CONV_TO_SECOND_CONV_MAPS])
@@ -51,7 +85,7 @@ def model():
     bn2 = tf.nn.batch_normalization(z2_bn, batch_mean2, batch_var2, beta2, scale2, epsilon)
     conv2 = tf.nn.relu(bn2)
     pool_1 = max_pool_2x2(conv2)
-    drop_1 = tf.nn.dropout(pool_1, keep_prob2)
+    drop_1 = tf.nn.dropout(pool_1, keep_prob2_l)
     if SHOULD_PRINT_SHAPES and TRAIN_MODE:
         print("conv2 shape: {}".format(conv2.get_shape()))
         print("pool_1 shape: {}".format(pool_1.get_shape()))
@@ -79,7 +113,7 @@ def model():
     bn4 = tf.nn.batch_normalization(z4_bn, batch_mean4, batch_var4, beta4, scale4, epsilon)
     conv4 = tf.nn.relu(bn4)
     pool_3 = max_pool_2x2(conv4)
-    drop_2 = tf.nn.dropout(pool_3, keep_prob2)
+    drop_2 = tf.nn.dropout(pool_3, keep_prob2_l)
     shapedrop3 = drop_2.get_shape()
     flat_size = 1
     first = True
@@ -97,17 +131,17 @@ def model():
     softmax = tf.nn.softmax(tf.layers.dense(inputs=flat, units=_NUM_CLASSES))
     if SHOULD_PRINT_SHAPES and TRAIN_MODE:
         print("softmax shape: {}".format(softmax.get_shape()))
-    y_pred_cls = tf.argmax(softmax, axis=1)
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=softmax, labels=y))
+    y_pred_cls_l = tf.argmax(softmax, axis=1)
+    loss_l = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=softmax, labels=y_local))
     if ADAM_OPTIMIZER:
-        optimizer = tf.train.AdamOptimizer(1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08).minimize(loss)
+        optimizer_l = tf.train.AdamOptimizer(1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08).minimize(loss_l)
     else:
-        optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
+        optimizer_l = tf.train.GradientDescentOptimizer(0.5).minimize(loss_l)
     # PREDICTION AND ACCURACY CALCULATION
-    correct_prediction = tf.equal(y_pred_cls, tf.argmax(y, axis=1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    correct_prediction_l = tf.equal(y_pred_cls_l, tf.argmax(y_local, axis=1))
+    accuracy_l = tf.reduce_mean(tf.cast(correct_prediction_l, tf.float32))
 
-    return x, y, loss, optimizer, correct_prediction, accuracy, y_pred_cls, keep_prob2
+    return x_local, y_local, loss_l, optimizer_l, correct_prediction_l, accuracy_l, y_pred_cls_l, keep_prob2_l
 
 
 def dense_to_one_hot(labels_dense, num_classes=10):
@@ -124,37 +158,39 @@ def _print_download_progress(count, block_size, total_size):
     msg = "\r- Download progress: {0:.1%}".format(pct_complete)
     sys.stdout.write(msg)
     sys.stdout.flush()
+    return
 
 
-def maybe_download_and_extract():
-    main_directory = "data_set/"
-    cifar_10_directory = main_directory + "cifar_10/"
-    if not os.path.exists(main_directory):
-        os.makedirs(main_directory)
-
-        url = "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
-        filename = url.split('/')[-1]
-        file_path = os.path.join(main_directory, filename)
-        zip_cifar_10 = file_path
-        file_path, _ = urllib.urlretrieve(url=url, filename=file_path, reporthook=_print_download_progress)
-
-        print()
-        print("Download finished. Extracting files.")
-        if file_path.endswith(".zip"):
-            zipfile.ZipFile(file=file_path, mode="r").extractall(main_directory)
-        elif file_path.endswith((".tar.gz", ".tgz")):
-            tarfile.open(name=file_path, mode="r:gz").extractall(main_directory)
-        print("Done.")
-
-        os.rename(main_directory + "./cifar-10-batches-py", cifar_10_directory)
-        os.remove(zip_cifar_10)
+# def maybe_download_and_extract():
+#     main_directory = "data_set/"
+#     cifar_10_directory = main_directory + "cifar_10/"
+#     if not os.path.exists(main_directory):
+#         os.makedirs(main_directory)
+#
+#         url = "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+#         filename = url.split('/')[-1]
+#         file_path = os.path.join(main_directory, filename)
+#         zip_cifar_10 = file_path
+#         file_path, _ = urllib.urlretrieve(url=url, filename=file_path, reporthook=_print_download_progress)
+#
+#         print()
+#         print("Download finished. Extracting files.")
+#         if file_path.endswith(".zip"):
+#             zipfile.ZipFile(file=file_path, mode="r").extractall(main_directory)
+#         elif file_path.endswith((".tar.gz", ".tgz")):
+#             tarfile.open(name=file_path, mode="r:gz").extractall(main_directory)
+#         print("Done.")
+#
+#         os.rename(main_directory + "./cifar-10-batches-py", cifar_10_directory)
+#         os.remove(zip_cifar_10)
+#     return
 
 
 def get_data_set(name="train"):
     x_local = None
     y_local = None
 
-    maybe_download_and_extract()
+    # maybe_download_and_extract()
 
     folder_name = "cifar_10"
 
@@ -198,78 +234,52 @@ def get_data_set(name="train"):
     return x_local, dense_to_one_hot(y_local)
 
 
-TRAIN_MODE = True  # to load model and test only the test set - set on FALSE
-ADAM_OPTIMIZER = True  # what model will be selected
-SHOULD_SAVE_MODELS = False
+def pre():
+    tf.reset_default_graph()
+    global sess
+    sess = tf.Session()
 
-SHOULD_PRINT_SHAPES = False
-SHOULD_PRINT_VARS_NAMES = False
-SHOULD_PRINT_START_VARS = False
-SHOULD_PRINT_END_VARS = True
-_BATCH_SIZE = 196
-_EPOCH = 2
-_TRAIN_KEEP_PROB = 0.5
-X_TO_FIRST_CONV_MAPS = 0
-FIRST_CONV_TO_SECOND_CONV_MAPS = 30
-SECOND_CONV_TO_THIRD_CONV_MAPS = 40
-THIRD_CONV_TO_FOURTH_CONV_MAPS = 95
-_IMAGE_SIZE = 32
-_IMAGE_CHANNELS = 3
-_NUM_CLASSES = 10
-BASE_PATH = "hw2Models/{}42350Params/model.ckpt"  # uncomment to save new models
-if ADAM_OPTIMIZER:
-    SAVED_MODELS_PATH = BASE_PATH.format("adamOptimizer")
-    OPTIMIZER_STR = "AdamOptimizer"
-else:
-    SAVED_MODELS_PATH = BASE_PATH.format("GradientOptimizer")
-    OPTIMIZER_STR = "GradientDescentOptimizer"
+    global train_x, train_y
+    if TRAIN_MODE:
+        train_x, train_y = get_data_set("train")
 
-# MODEL_PARAMS = 42350
-# MODEL_BEST_ACC_ADAM = 79.01
-# BEST_EPOCH_ADAM = 499
-# MODEL_BEST_ACC_GRAD = 78.9
-# BEST_EPOCH_ADAM = 339
+    global test_x, test_y
+    test_x, test_y = get_data_set("test")
 
-tf.reset_default_graph()
-sess = tf.Session()
+    global x, y, loss, optimizer, correct_prediction, accuracy, y_pred_cls, keep_prob2
+    x, y, loss, optimizer, correct_prediction, accuracy, y_pred_cls, keep_prob2 = model()
+    global total_parameters, global_accuracy, best_epoch, train_error_list, test_error_list
+    global_accuracy = 0
+    best_epoch = 0
+    train_error_list = []
+    test_error_list = []
 
-if TRAIN_MODE:
-    train_x, train_y = get_data_set("train")
-    copy_train_x = train_x
-    copy_train_x = copy_train_x.reshape(len(copy_train_x), _IMAGE_SIZE, _IMAGE_SIZE, _IMAGE_CHANNELS)
+    if TRAIN_MODE:
+        global BATCHSIZE, _STEPS_PRINT
+        BATCHSIZE = int(math.ceil(len(train_x) / _BATCH_SIZE))
+        _STEPS_PRINT = (BATCHSIZE / 2 - 1)
 
-test_x, test_y = get_data_set("test")
-
-x, y, loss, optimizer, correct_prediction, accuracy, y_pred_cls, keep_prob2 = model()
-global_accuracy = 0
-best_epoch = 0
-train_error_list = []
-train_loss_list = []
-test_error_list = []
-test_loss_list = []
-
-if TRAIN_MODE:
-    BATCHSIZE = int(math.ceil(len(train_x) / _BATCH_SIZE))
-    _STEPS_PRINT = (BATCHSIZE / 2 - 1)
-
-init = tf.global_variables_initializer()
-sess.run(init)
-saver = tf.train.Saver()
-total_parameters = 0
-if TRAIN_MODE:
-    if SHOULD_PRINT_VARS_NAMES:
-        print ("---vars name and shapes---")
-    for variable in tf.trainable_variables():
-        shape = variable.get_shape()
-        variable_parameters = 1
-        for dim in shape:
-            variable_parameters *= dim.value
+    global init, saver
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    saver = tf.train.Saver()
+    global total_parameters
+    total_parameters = 0
+    if TRAIN_MODE:
         if SHOULD_PRINT_VARS_NAMES:
-            print(variable.name, shape, variable_parameters)
-        total_parameters += variable_parameters
-    if SHOULD_PRINT_VARS_NAMES:
-        print("total PARAM {:,}".format(total_parameters))
-        print ("---done vars---")
+            print("---vars name and shapes---")
+        for variable in tf.trainable_variables():
+            shape = variable.get_shape()
+            variable_parameters = 1
+            for dim in shape:
+                variable_parameters *= dim.value
+            if SHOULD_PRINT_VARS_NAMES:
+                print(variable.name, shape, variable_parameters)
+            total_parameters += variable_parameters
+        if SHOULD_PRINT_VARS_NAMES:
+            print("total PARAM {:,}".format(total_parameters))
+            print("---done vars---")
+    return
 
 
 def args_print(stage, duration=0):
@@ -290,10 +300,10 @@ def args_print(stage, duration=0):
 
 
 def main():
+    pre()
     if TRAIN_MODE:
-        if SHOULD_PRINT_END_VARS:
+        if SHOULD_PRINT_START_VARS:
             args_print("start")
-        # print_graph('test', 'x', 'y', [], [])  # to see we will get graphs and not place holder at the end
         total_start_time = time()
         for i in range(_EPOCH):
             print("\nEpoch: {0}/{1}\n".format((i + 1), _EPOCH))
@@ -303,10 +313,9 @@ def main():
         if SHOULD_PRINT_END_VARS:
             args_print("end", duration)
 
-        msg = "optimizer is {}, best accuracy = {} achieved on epoch number {}"
+        msg = "optimizer is {}, best accuracy = {}% achieved on epoch number {}"
         print(msg.format(OPTIMIZER_STR, global_accuracy, best_epoch))
-        print_graph('error/epochs(train in red, test in green)', 'epochs', 'error', train_error_list, test_error_list)
-        print_graph('loss/epochs(train in red, test in green)', 'epochs', 'loss', train_loss_list, test_loss_list)
+        # print_graph('error/epochs(train in red, test in green)', 'epochs', 'error', train_error_list, test_error_list)
 
     else:
         load_model_and_run_test()
@@ -350,7 +359,6 @@ def load_model_and_run_test():
 
 def train(epoch):
     global train_error_list
-    global train_loss_list
     batch_size = int(math.ceil(len(train_x) / _BATCH_SIZE))
     current_error = 0
     current_loss = 0
@@ -371,7 +379,6 @@ def train(epoch):
         current_error += 1-batch_acc
 
     # print("loss avg for epoch {} is {}".format(epoch, current_loss / batch_size))
-    train_loss_list.append(current_loss / batch_size)
     train_error_list.append(current_error / batch_size)
     test_and_save(epoch)
 
@@ -379,13 +386,11 @@ def train(epoch):
 def test_and_save(epoch):
     global global_accuracy
     global test_error_list
-    global test_loss_list
     global best_epoch
     global saver
 
     i = 0
     predicted_class = np.zeros(shape=len(test_x), dtype=np.int)
-    counter = 0
     current_test_loss = 0
     while i < len(test_x):
         j = min(i + _BATCH_SIZE, len(test_x))
@@ -397,26 +402,17 @@ def test_and_save(epoch):
         )
         i = j
         current_test_loss += batch_test_loss
-        counter += 1
     correct = (np.argmax(test_y, axis=1) == predicted_class)
     test_error_list.append(1-correct.mean())
-    test_loss_list.append(current_test_loss / counter)
     acc = correct.mean() * 100
     correct_numbers = correct.sum()
 
     mes = "\nEpoch {} - accuracy: {:.2f}% ({}/{}) - global best acc on epoch {} = {}"
     print(mes.format((epoch + 1), acc, correct_numbers, len(test_x), best_epoch, global_accuracy))
 
-    if global_accuracy != 0 and global_accuracy < acc:
+    if acc > global_accuracy:
         mes = "epoch {} receive better accuracy: {:.2f} > {:.2f}. Saving session..."
         print(mes.format(epoch+1, acc, global_accuracy))
-        if SHOULD_SAVE_MODELS:
-            save_path = saver.save(sess, SAVED_MODELS_PATH)
-            print("Model saved in file: %s" % save_path)
-        global_accuracy = acc
-        best_epoch = epoch + 1
-
-    elif global_accuracy == 0:
         if SHOULD_SAVE_MODELS:
             save_path = saver.save(sess, SAVED_MODELS_PATH)
             print("Model saved in file: %s" % save_path)

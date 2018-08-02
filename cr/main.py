@@ -9,6 +9,7 @@ import json
 from collections import Counter
 import numpy as np
 import tensorflow as tf
+import logging
 # pip.main(['install', 'builtins '])
 # from builtins import enumerate
 from sklearn.model_selection import train_test_split
@@ -18,14 +19,13 @@ from collections import defaultdict
 sys.path.insert(0, './cr/')
 from text_cnn_rnn import TextCNNRNN
 
-import logging
 logging.getLogger().setLevel(logging.INFO)
 
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 IS_TRAIN = True
 TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
-TRAIN_FILE_PATH = PRO_FLD + 'data/parsed_input.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + 'data/US-Spain.700.csv.zip'
 PRINT_CLASSES_STATS_EACH_X_STEPS = 400
 
 params = {}
