@@ -24,9 +24,9 @@ logging.getLogger().setLevel(logging.INFO)
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 IS_TRAIN = True
-TRAIN_FILE_PATH = PRO_FLD + 'data/parsed_input.csv.zip'
 TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
-PRINT_CLASSES_STATS_EACH_X_STEPS = 1
+TRAIN_FILE_PATH = PRO_FLD + 'data/parsed_input.csv.zip'
+PRINT_CLASSES_STATS_EACH_X_STEPS = 400
 
 params = {}
 params['batch_size'] = 128
