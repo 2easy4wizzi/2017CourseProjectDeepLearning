@@ -1,2 +1,3 @@
 add count for all steps
-run new data "input_parsed.csv.zip"
+remove prints from each step. add modolu X steps
+in the main step print add correct/all = 
