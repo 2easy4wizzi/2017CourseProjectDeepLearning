@@ -24,8 +24,9 @@ logging.getLogger().setLevel(logging.INFO)
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 IS_TRAIN = True
-TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
 TRAIN_FILE_PATH = PRO_FLD + 'data/parsed_input.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
+PRINT_CLASSES_STATS_EACH_X_STEPS = 1
 
 params = {}
 params['batch_size'] = 128
@@ -240,6 +241,16 @@ def train_cnn_rnn():  # TRAIN
                     feed_dict)
                 return accuracy, loss, num_correct, predictions
 
+            def print_stats(stat_dict_total, stat_dict_correct):
+                for key in stat_dict_total:
+                    msg = "     Class {}: ({}/{}) -> accuracy: {}%"
+                    temp = 0
+                    if key in stat_dict_correct:
+                        temp = stat_dict_correct[key]
+                    my_acc = float(temp) / float(stat_dict_total[key])
+                    print(msg.format(key, temp, stat_dict_total[key], my_acc))
+                return
+
             saver = tf.train.Saver()
             sess.run(tf.global_variables_initializer())
 
@@ -248,11 +259,12 @@ def train_cnn_rnn():  # TRAIN
             best_accuracy, best_at_step = 0, 0
             number_of_steps_in_total = len(x_train) / 128 + 1  # steps
             number_of_steps_in_total *= params['num_epochs']
-            logging.info("---There will be {} steps total".format(number_of_steps_in_total))
+            logging.info("There will be {} steps total".format(int(number_of_steps_in_total)))
+
+            stat_dict_all_total, stat_dict_all_correct = defaultdict(int), defaultdict(int)
             # Train the model with x_train and y_train
             for train_batch in train_batches:
-                stat_dict_total = defaultdict(int)
-                stat_dict_correct = defaultdict(int)
+                stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                 x_train_batch, y_train_batch = zip(*train_batch)
                 train_step(x_train_batch, y_train_batch)
                 current_step = tf.train.global_step(sess, global_step)
@@ -264,38 +276,34 @@ def train_cnn_rnn():  # TRAIN
                     for dev_batch in dev_batches:
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
-                        ind = 0
-                        count_good = 0
+                        ind, count_good = 0, 0
                         for p in predictions:
                             real_class_value = np.argmax(y_dev_batch[ind])
                             real_class_label = labels[real_class_value]
-                            stat_dict_total[real_class_label] += 1
+                            stat_dict_step_total[real_class_label] += 1
                             if p == real_class_value:
                                 count_good += 1
-                                stat_dict_correct[real_class_label] += 1
+                                stat_dict_step_correct[real_class_label] += 1
                             ind += 1
                         total_dev_correct += num_dev_correct
                     accuracy = float(total_dev_correct) / len(y_dev)
-                    print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
-                    msg = "     for all classes-"
-                    msg2 = "total samples checked {}. total correct {}. acc {}"
-                    msg += msg2.format(len(y_dev), total_dev_correct, accuracy)
-                    print(msg)
 
-                    for key in stat_dict_total:
-                        msg = "     for class {}-".format(key)
-                        my_acc = float(stat_dict_correct[key]) / float(stat_dict_total[key])
-                        msg2 = "total samples checked {}. total correct {}. acc {}"
-                        msg += msg2.format(stat_dict_total[key], stat_dict_correct[key], my_acc)
-                        print(msg)
+                    # Stats prints
+                    mes = "STEP {} - ({}/{}) -> accuracy: {}%"
+                    print(mes.format(current_step, int(total_dev_correct), len(y_dev), accuracy*100))
+                    if current_step % PRINT_CLASSES_STATS_EACH_X_STEPS == 0:
+                        print_stats(stat_dict_step_total, stat_dict_step_correct)
 
                     if accuracy > best_accuracy:
                         best_accuracy, best_at_step = accuracy, current_step
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                         logging.info('    Saved model {} at step {}'.format(path, best_at_step))
                         logging.info('    Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
+                stat_dict_all_total = dict(Counter(stat_dict_all_total)+Counter(stat_dict_step_total))
+                stat_dict_all_correct = dict(Counter(stat_dict_all_correct)+Counter(stat_dict_step_correct))
             print('Training is complete, testing the best model on x_test and y_test')
-
+            # Stats prints
+            print_stats(stat_dict_all_total, stat_dict_all_correct)
             # Save the model files to trained_dir. predict.py needs trained model files.
             saver.save(sess, trained_dir + "best_model.ckpt")
 
