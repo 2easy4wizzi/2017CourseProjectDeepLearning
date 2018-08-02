@@ -13,6 +13,7 @@ import tensorflow as tf
 # from builtins import enumerate
 from sklearn.model_selection import train_test_split
 import sys
+from collections import defaultdict
 
 sys.path.insert(0, './cr/')
 from text_cnn_rnn import TextCNNRNN
@@ -248,6 +249,8 @@ def train_cnn_rnn():  # TRAIN
             number_of_steps_in_total = len(x_train) / 128 + 1  # steps
             number_of_steps_in_total *= params['num_epochs']
             logging.info("---There will be {} steps total".format(number_of_steps_in_total))
+            stat_dict_total = defaultdict(int)
+            stat_dict_correct = defaultdict(int)
             # Train the model with x_train and y_train
             for train_batch in train_batches:
                 x_train_batch, y_train_batch = zip(*train_batch)
@@ -261,14 +264,30 @@ def train_cnn_rnn():  # TRAIN
                     for dev_batch in dev_batches:
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
-                        count = 0
+                        ind = 0
                         count_good = 0
                         for p in predictions:
+                            real_class_ind = np.argmax(y_dev_batch[ind])
+                            real_class_label = labels[real_class_ind]
+                            stat_dict_total[real_class_label] += 1
                             # print(labels[p], labels[np.argmax(y_dev_batch[count])])
-                            if labels[p] == labels[np.argmax(y_dev_batch[count])]:
+                            # if labels[p] == labels[np.argmax(y_dev_batch[count])]:
+
+                            if p == real_class_ind:
                                 count_good += 1
-                            count += 1
-                        print(acc, num_dev_correct, count_good, count, (count_good/count))
+                                stat_dict_correct[real_class_label] += 1
+                            ind += 1
+                        print("real total samples checked {}. total correct {}. acc {}".format())
+                        print(acc, num_dev_correct, count_good, ind, (count_good/ind))
+                        temp_total = 0
+                        for key in stat_dict_total:
+                            temp_total += stat_dict_total[key]
+                        temp_correct = 0
+                        for key in stat_dict_total:
+                            temp_correct += stat_dict_correct[key]
+                        print(temp_correct, temp_total, (temp_correct/temp_total))
+                        print(stat_dict_total)
+                        print(stat_dict_correct)
                         total_dev_correct += num_dev_correct
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Step {} - Accuracy on dev set: {}'.format(current_step, accuracy))
