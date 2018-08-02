@@ -1,3 +1,3 @@
-add count for all steps
-remove prints from each step. add modolu X steps
-in the main step print add correct/all = 
+data 
+	upper bound 
+	add lower bound as well - we don't want too short sentences
