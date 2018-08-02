@@ -9,6 +9,8 @@ import numpy as np
 from time import time
 import math
 import matplotlib.pyplot as plt
+# %matplotlib inline
+
 
 def weight_variable(shape_local):
     initial = tf.truncated_normal(shape_local, stddev=0.1)
@@ -26,10 +28,6 @@ def conv2d(x_local, w_local):
 
 def max_pool_2x2(x_local):
     return tf.nn.max_pool(x_local, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-
-
-def gilad_max_pool_kxk(x_local, k=2):
-    return tf.nn.max_pool(x_local, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 
 
 def model():
@@ -129,7 +127,7 @@ def _print_download_progress(count, block_size, total_size):
 
 
 def maybe_download_and_extract():
-    main_directory = "./data_set/"
+    main_directory = "data_set/"
     cifar_10_directory = main_directory + "cifar_10/"
     if not os.path.exists(main_directory):
         os.makedirs(main_directory)
@@ -166,7 +164,7 @@ def get_data_set(name="train"):
     if name is "train":
         for i in range(5):
             f = open('./data_set/' + folder_name + '/data_batch_' + str(i + 1), 'rb')
-            datadict = pickle.load(f)
+            datadict = pickle.load(f, encoding='latin1')
             f.close()
 
             _X = datadict["data"]
@@ -186,7 +184,7 @@ def get_data_set(name="train"):
 
     elif name is "test":
         f = open('./data_set/' + folder_name + '/test_batch', 'rb')
-        datadict = pickle.load(f)
+        datadict = pickle.load(f, encoding='latin1')
         f.close()
 
         x_local = datadict["data"]
@@ -204,12 +202,12 @@ TRAIN_MODE = True  # to load model and test only the test set - set on FALSE
 ADAM_OPTIMIZER = True  # what model will be selected
 SHOULD_SAVE_MODELS = False
 
-SHOULD_PRINT_SHAPES = True
-SHOULD_PRINT_VARS_NAMES = True
-SHOULD_PRINT_START_VARS = True
+SHOULD_PRINT_SHAPES = False
+SHOULD_PRINT_VARS_NAMES = False
+SHOULD_PRINT_START_VARS = False
 SHOULD_PRINT_END_VARS = True
 _BATCH_SIZE = 196
-_EPOCH = 500
+_EPOCH = 2
 _TRAIN_KEEP_PROB = 0.5
 X_TO_FIRST_CONV_MAPS = 0
 FIRST_CONV_TO_SECOND_CONV_MAPS = 30
@@ -218,7 +216,7 @@ THIRD_CONV_TO_FOURTH_CONV_MAPS = 95
 _IMAGE_SIZE = 32
 _IMAGE_CHANNELS = 3
 _NUM_CLASSES = 10
-BASE_PATH = "./hw2Models/{}42350Params/model.ckpt"  # uncomment to save new models
+BASE_PATH = "hw2Models/{}42350Params/model.ckpt"  # uncomment to save new models
 if ADAM_OPTIMIZER:
     SAVED_MODELS_PATH = BASE_PATH.format("adamOptimizer")
     OPTIMIZER_STR = "AdamOptimizer"
@@ -280,9 +278,6 @@ def args_print(stage, duration=0):
     print("batchSize {}".format(_BATCH_SIZE))
     print("keepProb {}".format(_TRAIN_KEEP_PROB))
     print("train_x dims: {}".format(train_x.shape))
-    print("USE_SCALED_IMGS {}".format(USE_SCALED_IMGS))
-    print("USE_ROTATED_IMGS {}".format(USE_ROTATED_IMGS))
-    print("USE_FLIPPED_IMGS {}".format(USE_FLIPPED_IMGS))
     print("total PARAM {:,}".format(total_parameters))
     # print("X_TO_FIRST_CONV_MAPS {}".format(X_TO_FIRST_CONV_MAPS))
     print("FIRST_CONV_TO_SECOND_CONV_MAPS {}".format(FIRST_CONV_TO_SECOND_CONV_MAPS))
@@ -294,13 +289,11 @@ def args_print(stage, duration=0):
     print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
 
 
-if SHOULD_PRINT_START_VARS and TRAIN_MODE:
-    args_print("start")
-
-
 def main():
     if TRAIN_MODE:
-        print_graph('test', 'x', 'y', [], [])  # to see we will get graphs and not place holder at the end
+        if SHOULD_PRINT_END_VARS:
+            args_print("start")
+        # print_graph('test', 'x', 'y', [], [])  # to see we will get graphs and not place holder at the end
         total_start_time = time()
         for i in range(_EPOCH):
             print("\nEpoch: {0}/{1}\n".format((i + 1), _EPOCH))
