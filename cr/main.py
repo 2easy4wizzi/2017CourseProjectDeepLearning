@@ -14,6 +14,7 @@ import logging
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from text_cnn_rnn import TextCNNRNN
+from time import time
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -21,10 +22,10 @@ PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 USE_TMP_FOLDER = True
 IS_TRAIN = True
-SHOULD_SAVE = True
+SHOULD_SAVE = False
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
-# TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
-TRAIN_FILE_PATH = PRO_FLD + 'data/US-Spain.700.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
+# TRAIN_FILE_PATH = PRO_FLD + 'data/US-Spain.700.csv.zip'
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1
 
 params = {}
@@ -170,7 +171,7 @@ def train_cnn_rnn():  # TRAIN
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(y_train), len(y_dev), len(y_test)))
 
     # Create a directory, everything related to the training will be saved in this directory
-    timestamp = str(int(time.time()))
+    timestamp = str(int(time()))
     if USE_TMP_FOLDER:
         timestamp = "temp"
     trained_dir = PRO_FLD + 'trained_results_' + timestamp + '/'
@@ -478,9 +479,15 @@ def train_cnn_rnn():  # TRAIN
 
 if __name__ == '__main__':
     print("Entering function __main__")
+    total_start_time = time()
+    # with tf.device('/gpu:0'):
     if IS_TRAIN:
         train_cnn_rnn()
     else:
         pass
         # predict_unseen_data()
+    duration = time() - total_start_time
+    hours, rem = divmod(duration, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
     print("Leaving function __main__")
