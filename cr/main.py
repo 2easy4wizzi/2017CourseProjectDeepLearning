@@ -22,8 +22,8 @@ logging.getLogger().setLevel(logging.INFO)
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 DATA_DIR = 'data/'
-# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
 TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'us_vs_toefl_45.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
 # TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'data/US-Spain.700.csv.zip'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + 'alldata45_USonly.txt'
 CSV_NAME = 'us_vs_toefl_45.csv'
@@ -300,7 +300,8 @@ def train_cnn_rnn():  # TRAIN
                         if SHOULD_SAVE:
                             path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                             logging.info('    Saved model {} at step {}'.format(path, best_at_step))
-                        logging.info('    Best accuracy {:.4f}% at step {}'.format(best_accuracy*100, best_at_step))
+                        msg = '    Best accuracy {:.4f}% at step {} ({}/{})'
+                        logging.info(msg.format(best_accuracy*100, best_at_step, int(total_dev_correct), len(y_dev)))
                 stat_dict_all_total = dict(Counter(stat_dict_all_total)+Counter(stat_dict_step_total))
                 stat_dict_all_correct = dict(Counter(stat_dict_all_correct)+Counter(stat_dict_step_correct))
             train_msg = '***Training is complete. Best accuracy {:.4f}% at step {}'
