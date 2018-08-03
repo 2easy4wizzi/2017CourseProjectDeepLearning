@@ -3,6 +3,7 @@ import pickle
 import json
 import sys
 import itertools
+import zipfile
 import os
 import time
 import shutil
@@ -11,21 +12,27 @@ from collections import Counter
 import numpy as np
 import tensorflow as tf
 import logging
+import csv
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from text_cnn_rnn import TextCNNRNN
-from time import time
 
 logging.getLogger().setLevel(logging.INFO)
 
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
+DATA_DIR = 'data/'
+# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'us_vs_toefl_45.csv.zip'
+# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'data/US-Spain.700.csv.zip'
+REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + 'alldata45_USonly.txt'
+CSV_NAME = 'us_vs_toefl_45.csv'
+CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
+
 USE_TMP_FOLDER = True
 IS_TRAIN = True
 SHOULD_SAVE = False
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
-TRAIN_FILE_PATH = PRO_FLD + 'data/shortdata.csv.zip'
-# TRAIN_FILE_PATH = PRO_FLD + 'data/US-Spain.700.csv.zip'
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1
 
 params = {}
@@ -38,7 +45,7 @@ params['hidden_unit'] = 300
 params['l2_reg_lambda'] = 0.0
 params['max_pool_size'] = 4
 params['non_static'] = False
-params['num_epochs'] = 10
+params['num_epochs'] = 1
 params['num_filters'] = 32
 
 
@@ -171,7 +178,7 @@ def train_cnn_rnn():  # TRAIN
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(y_train), len(y_dev), len(y_test)))
 
     # Create a directory, everything related to the training will be saved in this directory
-    timestamp = str(int(time()))
+    timestamp = str(int(time.time()))
     if USE_TMP_FOLDER:
         timestamp = "temp"
     trained_dir = PRO_FLD + 'trained_results_' + timestamp + '/'
@@ -344,6 +351,55 @@ def train_cnn_rnn():  # TRAIN
     return
 
 
+def read_file_to_list():
+    all_rows, max_rows, file = [], -1, REGULAR_FILE_TO_CSV
+    f = open(file, 'r', encoding="utf8")
+    for line in f:
+        if 0 < max_rows <= len(all_rows):  # -1: read all file
+            break
+        line = line.strip()
+        line = line.replace("\n", "")
+        line = line.replace("\t", "")
+        all_rows.append(line.lower())
+    f.close()
+    all_data_x, all_data_y = [], []
+    for row in all_rows:
+        if row.startswith("[native"):
+            all_data_y.append("native ")
+        elif row.startswith("[non-native"):
+            all_data_y.append("non-native ")
+        sub_string = row[row.find('['):row.find(']') + 1]
+        row = row.replace(sub_string, '', 1)
+        row = row.strip()
+        all_data_x.append(row)
+
+    with open(CSV_FULL_PATH, 'w', newline='', encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Category", "Descript"])
+        writer.writerows(zip(all_data_y, all_data_x))
+
+    zf = zipfile.ZipFile(CSV_FULL_PATH + ".zip", "w")
+    zf.write(CSV_FULL_PATH, CSV_NAME)
+    zf.close()
+    return
+
+
+if __name__ == '__main__':
+    print("Entering function __main__")
+    total_start_time = time.time()
+    if IS_TRAIN:
+        train_cnn_rnn()
+    else:
+        # read_file_to_list()
+        # predict_unseen_data()
+        pass
+    duration = time.time() - total_start_time
+    hours, rem = divmod(duration, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
+    print("Leaving function __main__")
+
+
 # def load_trained_params(trained_dir):
 #     print("Entering function load_trained_params")
 #     params = json.loads(open(trained_dir + 'trained_parameters.json').read())
@@ -475,19 +531,3 @@ def train_cnn_rnn():  # TRAIN
 #             print('Prediction is complete, all files have been saved: {}'.format(predicted_dir))
 #     print("Leaving function predict_unseen_data")
 #     return
-
-
-if __name__ == '__main__':
-    print("Entering function __main__")
-    total_start_time = time()
-    # with tf.device('/gpu:0'):
-    if IS_TRAIN:
-        train_cnn_rnn()
-    else:
-        pass
-        # predict_unseen_data()
-    duration = time() - total_start_time
-    hours, rem = divmod(duration, 3600)
-    minutes, seconds = divmod(rem, 60)
-    print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
-    print("Leaving function __main__")
