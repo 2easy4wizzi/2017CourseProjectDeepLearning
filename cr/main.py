@@ -16,14 +16,14 @@ import csv
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from text_cnn_rnn import TextCNNRNN
-
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger().setLevel(logging.INFO)
 
 PRO_FLD = ''
 TRA_FLD = 'trained_results_1533109035/'
 DATA_DIR = 'data/'
-TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'us_vs_toefl_45.csv.zip'
 TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
+TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'us_vs_toefl_45.csv.zip'
 # TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'data/US-Spain.700.csv.zip'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + 'alldata45_USonly.txt'
 CSV_NAME = 'us_vs_toefl_45.csv'
@@ -45,7 +45,7 @@ params['hidden_unit'] = 300
 params['l2_reg_lambda'] = 0.0
 params['max_pool_size'] = 4
 params['non_static'] = False
-params['num_epochs'] = 1
+params['num_epochs'] = 10
 params['num_filters'] = 32
 
 
@@ -227,7 +227,7 @@ def train_cnn_rnn():  # TRAIN
                     cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
                     cnn_rnn.real_len: real_len(x_batch),
                 }
-                _, _, _, _ = sess.run([train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy], feed_dict)
+                _, _, _, _, _ = sess.run([train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.optimizer], feed_dict)
                 return
 
             def dev_step(x_batch, y_batch):
@@ -245,12 +245,12 @@ def train_cnn_rnn():  # TRAIN
 
             def print_stats(stat_dict_total, stat_dict_correct):
                 for key in stat_dict_total:
-                    msg = "     Class {}: ({}/{}) -> accuracy: {:.4f}%"
+                    my_msg = "     Class {}: ({}/{}) -> accuracy: {:.4f}%"
                     temp = 0
                     if key in stat_dict_correct:
                         temp = stat_dict_correct[key]
                     my_acc_l = (float(temp) / float(stat_dict_total[key]))*100
-                    print(msg.format(key, temp, stat_dict_total[key], my_acc_l))
+                    print(my_msg.format(key, temp, stat_dict_total[key], my_acc_l))
                 return
 
             saver = tf.train.Saver()
@@ -304,8 +304,8 @@ def train_cnn_rnn():  # TRAIN
                         logging.info(msg.format(best_accuracy*100, best_at_step, int(total_dev_correct), len(y_dev)))
                 stat_dict_all_total = dict(Counter(stat_dict_all_total)+Counter(stat_dict_step_total))
                 stat_dict_all_correct = dict(Counter(stat_dict_all_correct)+Counter(stat_dict_step_correct))
-            train_msg = '***Training is complete. Best accuracy {:.4f}% at step {}'
-            print(train_msg.format(best_accuracy*100, best_at_step))
+            train_msg = '***Training is complete. Best accuracy {:.4f}% at step {}/{}'
+            print(train_msg.format(best_accuracy*100, best_at_step, int(number_of_steps_in_total)))
             # Stats prints
             print_stats(stat_dict_all_total, stat_dict_all_correct)
             # Save the model files to trained_dir. predict.py needs trained model files.

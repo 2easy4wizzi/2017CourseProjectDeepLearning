@@ -90,6 +90,8 @@ class TextCNNRNN(object):
         with tf.name_scope('loss'):
             losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.input_y,
                                                                 logits=self.scores)  # only named arguments accepted
+            loss_l = tf.reduce_mean(losses)
+            self.optimizer = tf.train.AdamOptimizer(1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08).minimize(loss_l)
             self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
         with tf.name_scope('accuracy'):
