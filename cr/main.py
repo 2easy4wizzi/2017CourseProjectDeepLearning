@@ -24,7 +24,7 @@ DATA_DIR = 'data/'
 PRO_FLD = ''
 
 # casting txt to csv.zip
-BASE_REGULAR = 'us_vs_sp_45t'
+BASE_REGULAR = 'us_vs_gerAndHol_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
@@ -417,12 +417,23 @@ def make_txt_file():
     print("Need to parse raw data")
     print("    Parsing raw data...")
     base_path_nn = RAW_DATA_PATH + REDDIT_DIR + NON_NATIVE_RAW_FOLDER_NAME
-    non_native_file_names = os.listdir(base_path_nn)
-    non_native_file_names = [s for s in non_native_file_names if "spain.txt" in s.lower()]
+    non_native_file_names_all = os.listdir(base_path_nn)
+    non_native_file_names = []
+    nn_list = ['germany.txt', 'netherlands.txt']
+    for s in non_native_file_names_all:
+        for nn_country_name in nn_list:
+            if nn_country_name in s.lower():
+                non_native_file_names.append(s)
 
     base_path_na = RAW_DATA_PATH + REDDIT_DIR + NATIVE_RAW_FOLDER_NAME
-    native_file_names = os.listdir(base_path_na)
-    native_file_names = [s for s in native_file_names if "us.txt" in s.lower()]
+    native_file_names_all = os.listdir(base_path_na)
+    native_file_names = []
+    na_list = ['us.txt']
+    for s in native_file_names_all:
+        for na_country_name in na_list:
+            if na_country_name in s.lower():
+                native_file_names.append(s)
+
     print("    target files: {},{}".format(non_native_file_names, native_file_names))
     class_size = 11044
     all_semi_raw_data = []
