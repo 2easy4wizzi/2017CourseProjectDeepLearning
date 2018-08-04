@@ -10,3 +10,7 @@ cr/data_set/cifar_10/*
 cr/checkpoints_temp/*
 cr/trained_results_temp/*
 cr/rawData/*
+cr/data/us_vs_gerAndHol_45t.csv
+cr/data/us_vs_gerAndHol_45t.txt
+cr/data/us_vs_sp_45t.csv
+cr/data/us_vs_sp_45t.txt
