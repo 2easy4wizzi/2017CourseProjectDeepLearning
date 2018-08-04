@@ -1,6 +1,10 @@
 data 
-	upper bound 
-	add lower bound as well - we don't want too short sentences
-word embeding - check size
-check if iliya has an optimizer
+	upper bound!!! 
+		on outs 1-4 max length was about 2K
+		on test 5,6 max length is 4K - kernel dies
+		add upper bound on sentence picking
+	added lower bound - 45 tokens
+	
+word embeding - check size. does it contains all sentence ?
+ask to see iliya's code. is there an optimizer? where is it evaluated?
 ask alaa how to make the weights change more gentle
