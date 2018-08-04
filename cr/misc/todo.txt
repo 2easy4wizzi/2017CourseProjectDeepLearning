@@ -4,7 +4,7 @@ data
 		on test 5,6 max length is 4K - kernel dies
 		add upper bound on sentence picking
 	added lower bound - 45 tokens
-	
+understand what messure the code uses for sentences. longest sentence in what ?
 word embeding - check size. does it contains all sentence ?
 ask to see iliya's code. is there an optimizer? where is it evaluated?
 ask alaa how to make the weights change more gentle
