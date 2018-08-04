@@ -24,7 +24,8 @@ DATA_DIR = 'data/'
 PRO_FLD = ''
 
 # casting txt to csv.zip
-BASE_REGULAR = 'us_vs_gerAndHol_45t'
+# BASE_REGULAR = 'us_vs_gerAndHol_45t'
+BASE_REGULAR = 'shortdata'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
@@ -36,7 +37,6 @@ NATIVE_RAW_FOLDER_NAME = "native/"
 
 # existing FILES
 TRA_FLD = 'trained_results_1533109035/'  # NOT used if USE_TMP_FOLDER is TRUE !!!
-# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
 TRAIN_FILE_PATH = CSV_FULL_PATH + '.zip'
 
 USE_TMP_FOLDER = True
@@ -44,7 +44,8 @@ MAKE_NEW_DATA_FILE = False  # if this is True, main will not run. a new CSV.ZIP 
 IS_TRAIN = True
 SHOULD_SAVE = True
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
-PRINT_CLASSES_STATS_EACH_X_STEPS = 1
+PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
+PRINT_WORD_PARAGRAPH = True
 
 params = {}
 params['batch_size'] = 128
@@ -128,7 +129,6 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     data = np.array(data)
     data_size = len(data)
     num_batches_per_epoch = int(data_size / batch_size) + 1
-
     for epoch in range(num_epochs):
         if shuffle:
             shuffle_indices = np.random.permutation(np.arange(data_size))
@@ -238,7 +238,8 @@ def train_cnn_rnn():  # TRAIN
                     cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
                     cnn_rnn.real_len: real_len(x_batch),
                 }
-                _, _, _, _, _ = sess.run([train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.optimizer], feed_dict)
+                _, _, _, _, _ = sess.run(
+                    [train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.optimizer], feed_dict)
                 return
 
             def dev_step(x_batch, y_batch):
@@ -270,10 +271,8 @@ def train_cnn_rnn():  # TRAIN
             # Training starts here
             train_batches = batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
             best_accuracy, best_at_step = 0, 0
-            number_of_steps_in_total = len(x_train) / 128 + 1  # steps
-            number_of_steps_in_total *= params['num_epochs']
-            print("***There will be {} steps total".format(int(number_of_steps_in_total)))
-
+            number_of_steps_in_total = int((len(x_train) / params['batch_size'] + 1)*params['num_epochs'])  # steps
+            print("***There will be {} steps total".format(number_of_steps_in_total))
             stat_dict_all_total, stat_dict_all_correct = defaultdict(int), defaultdict(int)
             # Train the model with x_train and y_train
             for train_batch in train_batches:
@@ -311,12 +310,13 @@ def train_cnn_rnn():  # TRAIN
                         if SHOULD_SAVE:
                             path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                             logging.info('    Saved model {} at step {}'.format(path, best_at_step))
-                        msg = '    Best accuracy {:.4f}% at step {} ({}/{})'
-                        logging.info(msg.format(best_accuracy*100, best_at_step, int(total_dev_correct), len(y_dev)))
+                        msg = '    Best accuracy {:.4f}% at step {}/{} ({}/{})'
+                        logging.info(msg.format(best_accuracy*100, best_at_step, number_of_steps_in_total,
+                                                int(total_dev_correct), len(y_dev)))
                 stat_dict_all_total = dict(Counter(stat_dict_all_total)+Counter(stat_dict_step_total))
                 stat_dict_all_correct = dict(Counter(stat_dict_all_correct)+Counter(stat_dict_step_correct))
             train_msg = '***Training is complete. Best accuracy {:.4f}% at step {}/{}'
-            print(train_msg.format(best_accuracy*100, best_at_step, int(number_of_steps_in_total)))
+            print(train_msg.format(best_accuracy*100, best_at_step, current_step))
             # Stats prints
             print_stats(stat_dict_all_total, stat_dict_all_correct)
             # Save the model files to trained_dir. predict.py needs trained model files.
@@ -347,6 +347,15 @@ def train_cnn_rnn():  # TRAIN
                 print(acc_msg.format(total_test_correct, len(y_test), my_acc))
                 # Stats prints
                 print_stats(test_stat_dict_total, test_dict_correct)
+                if PRINT_WORD_PARAGRAPH:
+                    mdiff = 'data file={}'.format(CSV_FULL_PATH)
+                    last_out = 5
+                    print('Difference from out{}: {}'.format(last_out, mdiff))
+                    m1 = 'Training best acc {:.4f}% at step {}/{}'
+                    print(m1.format(best_accuracy*100, best_at_step, current_step))
+                    m2 = 'Test results: Accuracy on test set - ({}/{}) -> accuracy: {:.4f}%'
+                    print(m2.format(total_test_correct, len(y_test), my_acc))
+                    print_stats(test_stat_dict_total, test_dict_correct)
 
     # # Save trained parameters and files since predict.py needs them
     # with open(trained_dir + 'words_index.json', 'w') as outfile:
@@ -458,6 +467,25 @@ def make_txt_file():
     return
 
 
+def args_print(stage, duration=0):
+    print("{} ----------------------".format(stage))
+    print("epochs {}".format(params['num_epochs']))
+    print("batchSize {}".format(params['batch_size']))
+    print("dropout_keep_prob {}".format(params['dropout_keep_prob']))
+    print("embedding_dim {}".format(params['embedding_dim']))
+    print("evaluate_every {}".format(params['evaluate_every']))
+    print("num_filters {}".format(params['num_filters']))
+    print("filter_sizes {}".format(params['filter_sizes']))
+    print("hidden_unit {}".format(params['hidden_unit']))
+    print("l2_reg_lambda {}".format(params['l2_reg_lambda']))
+    print("max_pool_size {}".format(params['max_pool_size']))
+    print("non_static {}".format(params['non_static']))
+    hours, rem = divmod(duration, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("Time(HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
+    return
+
+
 if __name__ == '__main__':
     print("Entering function __main__")
     if MAKE_NEW_DATA_FILE:
@@ -469,10 +497,8 @@ if __name__ == '__main__':
         else:
             # predict_unseen_data()
             pass
-        duration = time.time() - total_start_time
-        hours, rem = divmod(duration, 3600)
-        minutes, seconds = divmod(rem, 60)
-        print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
+        dur = time.time() - total_start_time
+        args_print('params', dur)
     print("Leaving function __main__")
 
 
