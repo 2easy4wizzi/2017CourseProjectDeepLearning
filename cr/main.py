@@ -25,7 +25,9 @@ PRO_FLD = ''
 
 # casting txt to csv.zip
 # BASE_REGULAR = 'us_vs_gerAndHol_45t'
-BASE_REGULAR = 'shortdata'
+# BASE_REGULAR = 'shortdata'
+BASE_REGULAR = 'isr_france_hungary_poland_45t'
+# BASE_REGULAR = 'isr_france_hungary_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
@@ -44,7 +46,7 @@ MAKE_NEW_DATA_FILE = False  # if this is True, main will not run. a new CSV.ZIP 
 IS_TRAIN = True
 SHOULD_SAVE = True
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
-PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
+PRINT_CLASSES_STATS_EACH_X_STEPS = 10000000  # prints dev stats each x steps
 PRINT_WORD_PARAGRAPH = True
 
 params = {}
@@ -348,8 +350,8 @@ def train_cnn_rnn():  # TRAIN
                 # Stats prints
                 print_stats(test_stat_dict_total, test_dict_correct)
                 if PRINT_WORD_PARAGRAPH:
-                    mdiff = 'data file={}'.format(CSV_FULL_PATH)
-                    last_out = 5
+                    mdiff = 'data file={}. 4 countries'.format(CSV_FULL_PATH)
+                    last_out = 7
                     print('Difference from out{}: {}'.format(last_out, mdiff))
                     m1 = 'Training best acc {:.4f}% at step {}/{}'
                     print(m1.format(best_accuracy*100, best_at_step, current_step))
@@ -428,7 +430,7 @@ def make_txt_file():
     base_path_nn = RAW_DATA_PATH + REDDIT_DIR + NON_NATIVE_RAW_FOLDER_NAME
     non_native_file_names_all = os.listdir(base_path_nn)
     non_native_file_names = []
-    nn_list = ['germany.txt', 'netherlands.txt']
+    nn_list = ['france.txt', 'israel', 'hungary.txt']
     for s in non_native_file_names_all:
         for nn_country_name in nn_list:
             if nn_country_name in s.lower():
@@ -437,13 +439,14 @@ def make_txt_file():
     base_path_na = RAW_DATA_PATH + REDDIT_DIR + NATIVE_RAW_FOLDER_NAME
     native_file_names_all = os.listdir(base_path_na)
     native_file_names = []
-    na_list = ['us.txt']
+    na_list = []
     for s in native_file_names_all:
         for na_country_name in na_list:
             if na_country_name in s.lower():
                 native_file_names.append(s)
 
     print("    target files: {},{}".format(non_native_file_names, native_file_names))
+    # sys.exit(0) # recommended to see debug before moving forward
     class_size = 11044
     all_semi_raw_data = []
     for file in non_native_file_names:
