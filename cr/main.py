@@ -19,19 +19,30 @@ from text_cnn_rnn import TextCNNRNN
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger().setLevel(logging.INFO)
 
-PRO_FLD = ''
-TRA_FLD = 'trained_results_1533109035/'
+# GENERAL VARS
 DATA_DIR = 'data/'
-TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
-TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'us_vs_toefl_45.csv.zip'
-# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'data/US-Spain.700.csv.zip'
-REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + 'alldata45_USonly.txt'
-CSV_NAME = 'us_vs_toefl_45.csv'
+PRO_FLD = ''
+
+# casting txt to csv.zip
+BASE_REGULAR = 'us_vs_sp_45t'
+REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
+CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
+MINIMUM_ROW_LENGTH = 45
+RAW_DATA_PATH = "rawData/"  # if RAW_DATA_PATH isn't in your project home dir, set this to the path of rawData folder
+REDDIT_DIR = "reddit/"
+NON_NATIVE_RAW_FOLDER_NAME = "non-native/"
+NATIVE_RAW_FOLDER_NAME = "native/"
+
+# existing FILES
+TRA_FLD = 'trained_results_1533109035/'  # NOT used if USE_TMP_FOLDER is TRUE !!!
+# TRAIN_FILE_PATH = PRO_FLD + DATA_DIR + 'shortdata.csv.zip'
+TRAIN_FILE_PATH = CSV_FULL_PATH + '.zip'
 
 USE_TMP_FOLDER = True
+MAKE_NEW_DATA_FILE = False  # if this is True, main will not run. a new CSV.ZIP will be created. change the params
 IS_TRAIN = True
-SHOULD_SAVE = False
+SHOULD_SAVE = True
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1
 
@@ -133,7 +144,7 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
 
 
 def load_data(filename):
-    print("Entering function load_data")
+    print("Entering function load_data - data file name is {}".format(filename))
     df = pd.read_csv(filename, compression='zip')
     selected = ['Category', 'Descript']
     non_selected = list(set(df.columns) - set(selected))
@@ -352,7 +363,8 @@ def train_cnn_rnn():  # TRAIN
     return
 
 
-def read_file_to_list():
+def make_txt_csv_zip():
+    make_txt_file()
     all_rows, max_rows, file = [], -1, REGULAR_FILE_TO_CSV
     f = open(file, 'r', encoding="utf8")
     for line in f:
@@ -365,10 +377,8 @@ def read_file_to_list():
     f.close()
     all_data_x, all_data_y = [], []
     for row in all_rows:
-        if row.startswith("[native"):
-            all_data_y.append("native ")
-        elif row.startswith("[non-native"):
-            all_data_y.append("non-native ")
+        sub_string = row[row.find('[')+1:row.find(']')]
+        all_data_y.append(sub_string)
         sub_string = row[row.find('['):row.find(']') + 1]
         row = row.replace(sub_string, '', 1)
         row = row.strip()
@@ -385,19 +395,73 @@ def read_file_to_list():
     return
 
 
+def read_raw_file_to_list(file, max_rows, label):
+    my_list = []
+    f = open(file, 'r', encoding="utf8")
+    for line in f:
+        if 0 < max_rows <= len(my_list):  # -1: read all file
+            break
+        sub_string = line[line.find('['):line.find(']') + 1]
+        line = line.replace(sub_string, '', 1)
+        sub_string = line[line.find('['):line.find(']') + 1]
+        line = line.replace(sub_string, '', 1)
+        line = line.strip()
+        if len(line.split()) >= MINIMUM_ROW_LENGTH:
+            line = ("[" + label + "] " + line)
+            my_list.append(line.lower())
+    f.close()
+    return my_list
+
+
+def make_txt_file():
+    print("Need to parse raw data")
+    print("    Parsing raw data...")
+    base_path_nn = RAW_DATA_PATH + REDDIT_DIR + NON_NATIVE_RAW_FOLDER_NAME
+    non_native_file_names = os.listdir(base_path_nn)
+    non_native_file_names = [s for s in non_native_file_names if "spain.txt" in s.lower()]
+
+    base_path_na = RAW_DATA_PATH + REDDIT_DIR + NATIVE_RAW_FOLDER_NAME
+    native_file_names = os.listdir(base_path_na)
+    native_file_names = [s for s in native_file_names if "us.txt" in s.lower()]
+    print("    target files: {},{}".format(non_native_file_names, native_file_names))
+    class_size = 11044
+    all_semi_raw_data = []
+    for file in non_native_file_names:
+        local_list = read_raw_file_to_list(base_path_nn + file, class_size, file.split('.')[1])
+        all_semi_raw_data += local_list
+
+    for file in native_file_names:
+        local_list = read_raw_file_to_list(base_path_na + file, class_size, file.split('.')[1])
+        all_semi_raw_data += local_list
+
+    np.random.shuffle(all_semi_raw_data)
+    print("    all_data size is {}".format(len(all_semi_raw_data)))
+    print("    saving to file: {}".format(REGULAR_FILE_TO_CSV))
+
+    dst_file = open(REGULAR_FILE_TO_CSV, 'w+', encoding="utf8")
+    for line in all_semi_raw_data:
+        dst_file.write(line + '\n')
+    dst_file.close()
+    print("    file {} with {} lines was created".format(REGULAR_FILE_TO_CSV, len(all_semi_raw_data)))
+    print("    Finished Parsing raw data")
+    return
+
+
 if __name__ == '__main__':
     print("Entering function __main__")
-    total_start_time = time.time()
-    if IS_TRAIN:
-        train_cnn_rnn()
+    if MAKE_NEW_DATA_FILE:
+        make_txt_csv_zip()
     else:
-        # read_file_to_list()
-        # predict_unseen_data()
-        pass
-    duration = time.time() - total_start_time
-    hours, rem = divmod(duration, 3600)
-    minutes, seconds = divmod(rem, 60)
-    print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
+        total_start_time = time.time()
+        if IS_TRAIN:
+            train_cnn_rnn()
+        else:
+            # predict_unseen_data()
+            pass
+        duration = time.time() - total_start_time
+        hours, rem = divmod(duration, 3600)
+        minutes, seconds = divmod(rem, 60)
+        print("duration(formatted HH:MM:SS): {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
     print("Leaving function __main__")
 
 
