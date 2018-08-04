@@ -3,3 +3,4 @@ data
 	add lower bound as well - we don't want too short sentences
 word embeding - check size
 check if iliya has an optimizer
+ask alaa how to make the weights change more gentle
