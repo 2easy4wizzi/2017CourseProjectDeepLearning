@@ -1,7 +1,7 @@
 import re
 # import pickle
 # import json
-import sys
+# import sys
 import itertools
 import zipfile
 import os
@@ -27,7 +27,7 @@ PRO_FLD = ''
 # casting txt to csv.zip
 # BASE_REGULAR = 'us_vs_gerAndHol_45t'
 # BASE_REGULAR = 'isr_france_hungary_poland_45t'
-BASE_REGULAR = 'shortdata'
+# BASE_REGULAR = 'shortdata'
 BASE_REGULAR = 'us_vs_sp_45tTEMP'
 # BASE_REGULAR = 'isr_france_hungary_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
@@ -53,18 +53,17 @@ RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't res
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 PRINT_WORD_PARAGRAPH = True
 
-params = {}
-params['batch_size'] = 128
-params['dropout_keep_prob'] = 0.5
-params['embedding_dim'] = 300
-params['evaluate_every'] = 1
-params['filter_sizes'] = "3,4,5"
-params['hidden_unit'] = 300
-params['l2_reg_lambda'] = 0.0
-params['max_pool_size'] = 4
-params['non_static'] = False
-params['num_epochs'] = 10
-params['num_filters'] = 32
+params = {'batch_size': 128,
+          'dropout_keep_prob': 0.5,
+          'embedding_dim': 300,
+          'evaluate_every': 1,
+          'filter_sizes': "3,4,5",
+          'hidden_unit': 300,
+          'l2_reg_lambda': 0.0,
+          'max_pool_size': 4,
+          'non_static': False,
+          'num_epochs': 10,
+          'num_filters': 32}
 
 
 def clean_str(s):  # DATA
@@ -297,7 +296,7 @@ def train_cnn_rnn():  # TRAIN
 
             # Training starts here
             train_batches = batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
-            best_accuracy, best_at_step = 0, 0
+            best_accuracy, best_at_step, current_step = 0, 0, 0
             number_of_steps_in_total = int((len(x_train) / params['batch_size'] + 1)*params['num_epochs'])  # steps
             print("***There will be {} steps total".format(number_of_steps_in_total))
             stat_dict_all_total, stat_dict_all_correct = defaultdict(int), defaultdict(int)
