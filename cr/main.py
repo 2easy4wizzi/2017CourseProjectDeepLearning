@@ -1,6 +1,6 @@
-import re
-import pickle
-import json
+# import re
+# import pickle
+# import json
 import sys
 import itertools
 import zipfile
@@ -16,6 +16,7 @@ import csv
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from text_cnn_rnn import TextCNNRNN
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger().setLevel(logging.INFO)
 
@@ -25,8 +26,9 @@ PRO_FLD = ''
 
 # casting txt to csv.zip
 # BASE_REGULAR = 'us_vs_gerAndHol_45t'
-# BASE_REGULAR = 'shortdata'
-BASE_REGULAR = 'isr_france_hungary_poland_45t'
+# BASE_REGULAR = 'isr_france_hungary_poland_45t'
+BASE_REGULAR = 'us_vs_sp_45t'
+BASE_REGULAR = 'shortdata'
 # BASE_REGULAR = 'isr_france_hungary_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
@@ -46,7 +48,7 @@ MAKE_NEW_DATA_FILE = False  # if this is True, main will not run. a new CSV.ZIP 
 IS_TRAIN = True
 SHOULD_SAVE = True
 RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't restore and run test
-PRINT_CLASSES_STATS_EACH_X_STEPS = 10000000  # prints dev stats each x steps
+PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 PRINT_WORD_PARAGRAPH = True
 
 params = {}
@@ -89,7 +91,7 @@ def load_embeddings(vocabulary):
 
 
 def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None):
-    """Pad setences during training or prediction"""
+    """Pad sentences during training or prediction"""
     # longest_sen = ""
     # max_found = 0
     # for sen in sentences:
@@ -104,7 +106,8 @@ def pad_sentences(sentences, padding_word="<PAD/>", forced_sequence_length=None)
     else:  # Prediction
         print('This is prediction, reading the trained sequence length')
         sequence_length = forced_sequence_length
-    print('The sentences length (after padding) will be {}(length of the longest sentence)'.format(sequence_length))
+    m_len = 'All sentences length (after padding) will be {} words(length in words of the longest sentence)'
+    print(m_len.format(sequence_length))
     padded_sentences = []
     for i in range(len(sentences)):
         sentence = sentences[i]
@@ -164,6 +167,46 @@ def load_data(filename):
     x_raw = df[selected[1]].apply(lambda x_l: clean_str(x_l).split(' ')).tolist()
     y_raw = df[selected[0]].apply(lambda y_l: label_dict[y_l]).tolist()
 
+    len_sen = []
+    # print(len(x_raw))
+    for s in x_raw:
+        len_sen.append(len(s))
+    len_sen = sorted(len_sen, reverse=True)[:10]
+    # print(len_sen)
+
+    # print(x_raw[1])
+    # print(labels[int(np.argmax(y_raw[1]))])
+
+    ind_to_remove = []
+    for i in range(len(x_raw)):
+        if len(x_raw[i]) in len_sen:
+            ind_to_remove.append(i)
+            # del_from_x_raw.append(x_raw[i])
+            # del_from_y_raw.append(y_raw[i])
+            # print(y_raw[i], x_raw[i])
+
+    ind_to_remove = sorted(ind_to_remove, reverse=True)
+    print(len(x_raw))
+    # print(ind_to_remove)
+    for i in range(len(ind_to_remove)):
+        a = ind_to_remove[i]
+        del y_raw[a]
+        del x_raw[a]
+    print(len(x_raw))
+    # print(y_raw[a], x_raw[a])
+    # print(y_raw[b], x_raw[b])
+    #
+    # del y_raw[b]
+    # del x_raw[b]
+    #
+    # print(y_raw[a], x_raw[a])
+    # print(y_raw[b], x_raw[b])
+    # # print(y_raw[b-1], x_raw[b-1])
+    #
+
+
+    # sys.exit(0)
+
     x_raw = pad_sentences(x_raw)
     vocabulary, vocabulary_inv = build_vocab(x_raw)
 
@@ -217,7 +260,8 @@ def train_cnn_rnn():  # TRAIN
                 l2_reg_lambda=params['l2_reg_lambda'])
 
             global_step = tf.Variable(0, name='global_step', trainable=False)
-            optimizer = tf.train.RMSPropOptimizer(1e-3, decay=0.9)
+            # optimizer = tf.train.RMSPropOptimizer(1e-3, decay=0.9)
+            optimizer = tf.train.AdamOptimizer(1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08)
             grads_and_vars = optimizer.compute_gradients(cnn_rnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -240,8 +284,7 @@ def train_cnn_rnn():  # TRAIN
                     cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
                     cnn_rnn.real_len: real_len(x_batch),
                 }
-                _, _, _, _, _ = sess.run(
-                    [train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.optimizer], feed_dict)
+                _, _, _, _ = sess.run([train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy], feed_dict)
                 return
 
             def dev_step(x_batch, y_batch):
@@ -253,8 +296,8 @@ def train_cnn_rnn():  # TRAIN
                     cnn_rnn.pad: np.zeros([len(x_batch), 1, params['embedding_dim'], 1]),
                     cnn_rnn.real_len: real_len(x_batch),
                 }
-                step, loss_l, accuracy_l, num_correct, predictions_l = sess.run(
-                    [global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
+                loss_l, accuracy_l, num_correct, predictions_l = sess.run(
+                    [cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
                 return accuracy_l, loss_l, num_correct, predictions_l
 
             def print_stats(stat_dict_total, stat_dict_correct):
@@ -501,7 +544,7 @@ if __name__ == '__main__':
             # predict_unseen_data()
             pass
         dur = time.time() - total_start_time
-        args_print('params', dur)
+        args_print('params', int(dur))
     print("Leaving function __main__")
 
 
