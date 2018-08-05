@@ -361,7 +361,6 @@ def train(epoch):
     global train_error_list
     batch_size = int(math.ceil(len(train_x) / _BATCH_SIZE))
     current_error = 0
-    current_loss = 0
     for s in range(batch_size):
         batch_xs = train_x[s * _BATCH_SIZE: (s + 1) * _BATCH_SIZE]
         batch_ys = train_y[s * _BATCH_SIZE: (s + 1) * _BATCH_SIZE]
@@ -375,7 +374,6 @@ def train(epoch):
             msg = "step: {} , batch_acc = {} , batch loss = {}"
             print(msg.format(s, batch_acc, batch_loss))
 
-        current_loss += batch_loss
         current_error += 1-batch_acc
 
     # print("loss avg for epoch {} is {}".format(epoch, current_loss / batch_size))

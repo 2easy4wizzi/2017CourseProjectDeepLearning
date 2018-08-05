@@ -1,4 +1,4 @@
-# import re
+import re
 # import pickle
 # import json
 import sys
@@ -27,13 +27,15 @@ PRO_FLD = ''
 # casting txt to csv.zip
 # BASE_REGULAR = 'us_vs_gerAndHol_45t'
 # BASE_REGULAR = 'isr_france_hungary_poland_45t'
-BASE_REGULAR = 'us_vs_sp_45t'
 BASE_REGULAR = 'shortdata'
+BASE_REGULAR = 'us_vs_sp_45tTEMP'
 # BASE_REGULAR = 'isr_france_hungary_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
 MINIMUM_ROW_LENGTH = 45
+MAXIMUM_ROW_LENGTH = 150
+COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 RAW_DATA_PATH = "rawData/"  # if RAW_DATA_PATH isn't in your project home dir, set this to the path of rawData folder
 REDDIT_DIR = "reddit/"
 NON_NATIVE_RAW_FOLDER_NAME = "non-native/"
@@ -66,21 +68,10 @@ params['num_filters'] = 32
 
 
 def clean_str(s):  # DATA
-    # s = re.sub(r"[^A-Za-z0-9:(),!?\'`]", " ", s)
-    # s = re.sub(r" : ", ":", s)
-    # s = re.sub(r"\'s", " \'s", s)
-    # s = re.sub(r"\'ve", " \'ve", s)
-    # s = re.sub(r"n\'t", " n\'t", s)
-    # s = re.sub(r"\'re", " \'re", s)
-    # s = re.sub(r"\'d", " \'d", s)
-    # s = re.sub(r"\'ll", " \'ll", s)
-    # s = re.sub(r",", " , ", s)
-    # s = re.sub(r"!", " ! ", s)
-    # s = re.sub(r"\(", " \( ", s)
-    # s = re.sub(r"\)", " \) ", s)
-    # s = re.sub(r"\?", " \? ", s)
-    # s = re.sub(r"\s{2,}", " ", s)
-    return s.strip().lower()
+    strip_special_chars = re.compile("[^A-Za-z0-9 ,.]+")
+    s = s.lower().replace("<br />", " ")
+    # return s.lower()
+    return re.sub(strip_special_chars, "", s)
 
 
 def load_embeddings(vocabulary):
@@ -131,6 +122,7 @@ def build_vocab(sentences):
 
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
+    shuffle = False  # TODO remove line
     data = np.array(data)
     data_size = len(data)
     num_batches_per_epoch = int(data_size / batch_size) + 1
@@ -156,7 +148,7 @@ def load_data(filename):
 
     df = df.drop(non_selected, axis=1)
     df = df.dropna(axis=0, how='any', subset=selected)
-    df = df.reindex(np.random.permutation(df.index))
+    # df = df.reindex(np.random.permutation(df.index))  # TODO remove comment
 
     labels = sorted(list(set(df[selected[0]].tolist())))
     num_labels = len(labels)
@@ -166,46 +158,30 @@ def load_data(filename):
 
     x_raw = df[selected[1]].apply(lambda x_l: clean_str(x_l).split(' ')).tolist()
     y_raw = df[selected[0]].apply(lambda y_l: label_dict[y_l]).tolist()
+    # print(len(x_raw[0]))
+    # print(x_raw[0])
+    for i in range(len(x_raw)):  # remove empty strings
+        x_raw[i] = [x for x in x_raw[i] if x]
+    # print(len(x_raw[0]))
+    # print(x_raw[0])
 
-    len_sen = []
+    # REMOVE TOP 10 SENTENCES? maybe we should
+    # len_sen = []
     # print(len(x_raw))
-    for s in x_raw:
-        len_sen.append(len(s))
-    len_sen = sorted(len_sen, reverse=True)[:10]
-    # print(len_sen)
-
-    # print(x_raw[1])
-    # print(labels[int(np.argmax(y_raw[1]))])
-
-    ind_to_remove = []
-    for i in range(len(x_raw)):
-        if len(x_raw[i]) in len_sen:
-            ind_to_remove.append(i)
-            # del_from_x_raw.append(x_raw[i])
-            # del_from_y_raw.append(y_raw[i])
-            # print(y_raw[i], x_raw[i])
-
-    ind_to_remove = sorted(ind_to_remove, reverse=True)
-    print(len(x_raw))
-    # print(ind_to_remove)
-    for i in range(len(ind_to_remove)):
-        a = ind_to_remove[i]
-        del y_raw[a]
-        del x_raw[a]
-    print(len(x_raw))
-    # print(y_raw[a], x_raw[a])
-    # print(y_raw[b], x_raw[b])
+    # for s in x_raw:
+    #     len_sen.append(len(s))
+    # len_sen = sorted(len_sen, reverse=True)[:10]
+    # ind_to_remove = []
+    # for i in range(len(x_raw)):
+    #     if len(x_raw[i]) in len_sen:
+    #         ind_to_remove.append(i)
     #
-    # del y_raw[b]
-    # del x_raw[b]
-    #
-    # print(y_raw[a], x_raw[a])
-    # print(y_raw[b], x_raw[b])
-    # # print(y_raw[b-1], x_raw[b-1])
-    #
-
-
-    # sys.exit(0)
+    # ind_to_remove = sorted(ind_to_remove, reverse=True)
+    # for i in range(len(ind_to_remove)):
+    #     a = ind_to_remove[i]
+    #     del y_raw[a]
+    #     del x_raw[a]
+    # print(len(x_raw))
 
     x_raw = pad_sentences(x_raw)
     vocabulary, vocabulary_inv = build_vocab(x_raw)
@@ -260,8 +236,10 @@ def train_cnn_rnn():  # TRAIN
                 l2_reg_lambda=params['l2_reg_lambda'])
 
             global_step = tf.Variable(0, name='global_step', trainable=False)
-            # optimizer = tf.train.RMSPropOptimizer(1e-3, decay=0.9)
-            optimizer = tf.train.AdamOptimizer(1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08)
+            # optimizer = tf.train.RMSPropOptimizer(0.0005, decay=0.9)
+            # optimizer = tf.train.RMSPropOptimizer(0.0001, decay=0.9)
+            # optimizer = tf.train.AdamOptimizer(0.0001, beta1=0.9, beta2=0.999, epsilon=1e-08)
+            optimizer = tf.train.AdamOptimizer(0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
             grads_and_vars = optimizer.compute_gradients(cnn_rnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -301,13 +279,17 @@ def train_cnn_rnn():  # TRAIN
                 return accuracy_l, loss_l, num_correct, predictions_l
 
             def print_stats(stat_dict_total, stat_dict_correct):
+                longest_key = 0
                 for key in stat_dict_total:
-                    my_msg = "     Class {}: ({}/{}) -> accuracy: {:.4f}%"
+                    if len(key) > longest_key:
+                        longest_key = len(key)
+                for key in stat_dict_total:
+                    my_msg = "     Class {:{}s}: ({}/{}) -> accuracy: {:.4f}%"
                     temp = 0
                     if key in stat_dict_correct:
                         temp = stat_dict_correct[key]
                     my_acc_l = (float(temp) / float(stat_dict_total[key]))*100
-                    print(my_msg.format(key, temp, stat_dict_total[key], my_acc_l))
+                    print(my_msg.format(key, longest_key, temp, stat_dict_total[key], my_acc_l))
                 return
 
             saver = tf.train.Saver()
@@ -393,9 +375,9 @@ def train_cnn_rnn():  # TRAIN
                 # Stats prints
                 print_stats(test_stat_dict_total, test_dict_correct)
                 if PRINT_WORD_PARAGRAPH:
-                    mdiff = 'data file={}. 4 countries'.format(CSV_FULL_PATH)
-                    last_out = 7
-                    print('Difference from out{}: {}'.format(last_out, mdiff))
+                    # mdiff = 'data file={}. 4 countries'.format(CSV_FULL_PATH)
+                    # last_out = 7
+                    # print('Difference from out{}: {}'.format(last_out, mdiff))
                     m1 = 'Training best acc {:.4f}% at step {}/{}'
                     print(m1.format(best_accuracy*100, best_at_step, current_step))
                     m2 = 'Test results: Accuracy on test set - ({}/{}) -> accuracy: {:.4f}%'
@@ -452,6 +434,8 @@ def make_txt_csv_zip():
 def read_raw_file_to_list(file, max_rows, label):
     my_list = []
     f = open(file, 'r', encoding="utf8")
+    # max_words_in_sen = 0
+    # sen = ''
     for line in f:
         if 0 < max_rows <= len(my_list):  # -1: read all file
             break
@@ -459,10 +443,25 @@ def read_raw_file_to_list(file, max_rows, label):
         line = line.replace(sub_string, '', 1)
         sub_string = line[line.find('['):line.find(']') + 1]
         line = line.replace(sub_string, '', 1)
+        line = clean_str(line)
         line = line.strip()
-        if len(line.split()) >= MINIMUM_ROW_LENGTH:
+
+        bad_sentence = False
+        word_list = line.split()
+        for w in word_list:
+            if word_list.count(w) > COUNT_WORD:
+                bad_sentence = True
+
+        line_word_count = len(line.split())
+        if MAXIMUM_ROW_LENGTH >= line_word_count >= MINIMUM_ROW_LENGTH and not bad_sentence:
             line = ("[" + label + "] " + line)
             my_list.append(line.lower())
+            # if line_word_count > max_words_in_sen:
+            #     max_words_in_sen = line_word_count
+            #     sen = line
+
+    # print(max_words_in_sen)
+    # print(sen)
     f.close()
     return my_list
 
@@ -473,7 +472,7 @@ def make_txt_file():
     base_path_nn = RAW_DATA_PATH + REDDIT_DIR + NON_NATIVE_RAW_FOLDER_NAME
     non_native_file_names_all = os.listdir(base_path_nn)
     non_native_file_names = []
-    nn_list = ['france.txt', 'israel', 'hungary.txt']
+    nn_list = ['spain.txt']
     for s in non_native_file_names_all:
         for nn_country_name in nn_list:
             if nn_country_name in s.lower():
@@ -482,7 +481,7 @@ def make_txt_file():
     base_path_na = RAW_DATA_PATH + REDDIT_DIR + NATIVE_RAW_FOLDER_NAME
     native_file_names_all = os.listdir(base_path_na)
     native_file_names = []
-    na_list = []
+    na_list = ['us.txt']
     for s in native_file_names_all:
         for na_country_name in na_list:
             if na_country_name in s.lower():

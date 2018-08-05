@@ -24,11 +24,11 @@ class TextCNNRNN(object):
             emb = tf.expand_dims(self.embedded_chars, -1)
 
         pooled_concat = []
-        reduced = np.int32(np.ceil((sequence_length) * 1.0 / max_pool_size))
+        reduced = np.int32(np.ceil(sequence_length * 1.0 / max_pool_size))
 
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope('conv-maxpool-%s' % filter_size):
-                # Zero paddings so that the convolution output have dimension batch x sequence_length x emb_size x channel
+                # Zero padding so that the conv output have dimension batch x sequence_length x emb_size x channel
                 num_prio = (filter_size - 1) // 2
                 num_post = (filter_size - 1) - num_prio
                 pad_prio = tf.concat([self.pad] * num_prio, 1)
@@ -63,7 +63,7 @@ class TextCNNRNN(object):
         # inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, reduced, pooled_concat)]
         inputs = [tf.squeeze(input_, [1]) for input_ in
                   tf.split(pooled_concat, num_or_size_splits=int(reduced), axis=1)]
-        # outputs, state = tf.nn.rnn(lstm_cell, inputs, initial_state=self._initial_state, sequence_length=self.real_len)
+        # outputs,state = tf.nn.rnn(lstm_cell, inputs, initial_state=self._initial_state, sequence_length=self.real_len)
         outputs, state = tf.contrib.rnn.static_rnn(lstm_cell, inputs, initial_state=self._initial_state,
                                                    sequence_length=self.real_len)
 
