@@ -235,10 +235,8 @@ def train_cnn_rnn():  # TRAIN
                 l2_reg_lambda=params['l2_reg_lambda'])
 
             global_step = tf.Variable(0, name='global_step', trainable=False)
-            # optimizer = tf.train.RMSPropOptimizer(0.0005, decay=0.9)
-            # optimizer = tf.train.RMSPropOptimizer(0.0001, decay=0.9)
-            # optimizer = tf.train.AdamOptimizer(0.0001, beta1=0.9, beta2=0.999, epsilon=1e-08)
-            optimizer = tf.train.AdamOptimizer(0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
+            optimizer = tf.train.RMSPropOptimizer(0.001, decay=0.9)
+            # optimizer = tf.train.AdamOptimizer(0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
             grads_and_vars = optimizer.compute_gradients(cnn_rnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
