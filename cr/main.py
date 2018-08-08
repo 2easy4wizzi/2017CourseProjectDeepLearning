@@ -1,7 +1,7 @@
 import re
 # import pickle
 # import json
-# import sys
+import sys
 import itertools
 import zipfile
 import os
@@ -25,10 +25,11 @@ DATA_DIR = 'data/'
 PRO_FLD = ''
 
 # casting txt to csv.zip
-# BASE_REGULAR = 'us_vs_gerAndHol_45t'
 # BASE_REGULAR = 'isr_france_hungary_poland_45t'
+# BASE_REGULAR = 'us_vs_sp_45tTEMP'
 # BASE_REGULAR = 'shortdata'
-BASE_REGULAR = 'us_vs_sp_45tTEMP'
+# BASE_REGULAR = 'us_vs_gerAndHol_45t'
+BASE_REGULAR = 'us_vs_gerAndHol_25t'
 # BASE_REGULAR = 'isr_france_hungary_45t'
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
@@ -235,8 +236,8 @@ def train_cnn_rnn():  # TRAIN
                 l2_reg_lambda=params['l2_reg_lambda'])
 
             global_step = tf.Variable(0, name='global_step', trainable=False)
-            optimizer = tf.train.RMSPropOptimizer(0.001, decay=0.9)
-            # optimizer = tf.train.AdamOptimizer(0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
+            # optimizer = tf.train.RMSPropOptimizer(0.001, decay=0.9)
+            optimizer = tf.train.AdamOptimizer(0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
             grads_and_vars = optimizer.compute_gradients(cnn_rnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -372,9 +373,9 @@ def train_cnn_rnn():  # TRAIN
                 # Stats prints
                 print_stats(test_stat_dict_total, test_dict_correct)
                 if PRINT_WORD_PARAGRAPH:
-                    # mdiff = 'data file={}. 4 countries'.format(CSV_FULL_PATH)
-                    # last_out = 7
-                    # print('Difference from out{}: {}'.format(last_out, mdiff))
+                    mdiff = 'data file={}. us and spain 45-150 tokens. BasicLSTMCell'.format(CSV_FULL_PATH)
+                    last_out = 7
+                    print('Difference from out{}: {}'.format(last_out, mdiff))
                     m1 = 'Training best acc {:.4f}% at step {}/{}'
                     print(m1.format(best_accuracy*100, best_at_step, current_step))
                     m2 = 'Test results: Accuracy on test set - ({}/{}) -> accuracy: {:.4f}%'

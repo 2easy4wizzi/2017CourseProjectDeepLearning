@@ -1,22 +1,18 @@
-data 
-	upper bound!!! 
-		on outs 1-4 max length was about 2K
-		on test 5,6 max length is 4K - kernel dies
-		add upper bound on sentence picking
-	added lower bound - 45 tokens
 word embeding - check size. does it contains all sentence ?
 
-try lstm_cell = tf.contrib.rnn.BasicLSTMCell(lstm_units)
-tell iliya
-	they don't have learning rate - can play with it
-	add to the regex comma and dot - important
+try 
+	make data 25-100
+	bi directional
+	word embeding
+		like iliyas
+		lower dim
+	dynamic rnn
 	
 	
-	
-prop0.0005
-adam0.001
 
-adam0.001 new Temp data us-spain
-prop0.001 new Temp data us-spain
-
-new lstm cell
+	
+	
+tests:
+	embeding size 100,200
+	epochs 10->50
+	
