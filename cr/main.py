@@ -29,13 +29,18 @@ PRO_FLD = ''
 # BASE_REGULAR = 'us_vs_sp_45tTEMP'
 # BASE_REGULAR = 'shortdata'
 # BASE_REGULAR = 'us_vs_gerAndHol_45t'
-BASE_REGULAR = 'us_vs_gerAndHol_25t'
+# BASE_REGULAR = 'us_vs_gerAndHol_25t'
 # BASE_REGULAR = 'isr_france_hungary_45t'
+# NN_LIST_SUB_STRINGS = ['turkey.txt', 'germany.txt', 'russia.txt', 'france.txt']
+NN_LIST_SUB_STRINGS = ['turkey.txt', 'germany.txt', 'russia.txt']
+NA_LIST_SUB_STRINGS = ['us.txt']
+LINE_FROM_CLASS = 50000
+MINIMUM_ROW_LENGTH = 45
+MAXIMUM_ROW_LENGTH = 150
+BASE_REGULAR = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 REGULAR_FILE_TO_CSV = PRO_FLD + DATA_DIR + BASE_REGULAR + '.txt'
 CSV_NAME = BASE_REGULAR + '.csv'
 CSV_FULL_PATH = PRO_FLD + DATA_DIR + CSV_NAME
-MINIMUM_ROW_LENGTH = 45
-MAXIMUM_ROW_LENGTH = 150
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 RAW_DATA_PATH = "rawData/"  # if RAW_DATA_PATH isn't in your project home dir, set this to the path of rawData folder
 REDDIT_DIR = "reddit/"
@@ -470,7 +475,7 @@ def make_txt_file():
     base_path_nn = RAW_DATA_PATH + REDDIT_DIR + NON_NATIVE_RAW_FOLDER_NAME
     non_native_file_names_all = os.listdir(base_path_nn)
     non_native_file_names = []
-    nn_list = ['spain.txt']
+    nn_list = NN_LIST_SUB_STRINGS
     for s in non_native_file_names_all:
         for nn_country_name in nn_list:
             if nn_country_name in s.lower():
@@ -479,7 +484,7 @@ def make_txt_file():
     base_path_na = RAW_DATA_PATH + REDDIT_DIR + NATIVE_RAW_FOLDER_NAME
     native_file_names_all = os.listdir(base_path_na)
     native_file_names = []
-    na_list = ['us.txt']
+    na_list = NA_LIST_SUB_STRINGS
     for s in native_file_names_all:
         for na_country_name in na_list:
             if na_country_name in s.lower():
@@ -487,7 +492,7 @@ def make_txt_file():
 
     print("    target files: {},{}".format(non_native_file_names, native_file_names))
     # sys.exit(0) # recommended to see debug before moving forward
-    class_size = 11044
+    class_size = LINE_FROM_CLASS
     all_semi_raw_data = []
     for file in non_native_file_names:
         local_list = read_raw_file_to_list(base_path_nn + file, class_size, file.split('.')[1])
