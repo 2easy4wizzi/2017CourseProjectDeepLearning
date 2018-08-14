@@ -13,3 +13,5 @@ cr/rawData/*
 cr/data/*.csv
 cr/data/*.txt
 cr/data/*.zip
+bi/input/glove.6B.zip
+bi/input/glove.6B.50d.txt
