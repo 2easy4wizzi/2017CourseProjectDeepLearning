@@ -47,12 +47,12 @@ TEST = True
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 
 # uncomment for local run
-DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-EPOCHS = 3
-BATCH_SIZE = 10
-TEST = False
-SHOULD_SAVE = False
+# DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
+# EPOCHS = 3
+# BATCH_SIZE = 10
+# TEST = False
+# SHOULD_SAVE = False
 
 
 def clean_str(s):  # DATA
@@ -279,6 +279,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
                 if len(batch_y_trn) != BATCH_SIZE:
+                    print('len(batch_y_trn) != BATCH_SIZE - {}'.format(len(batch_y_trn)))
                     continue
                 _, _ = train_step_func(sess, batch_x_trn, batch_y_trn)
                 # #if you like to print the train data performance, replace the above line with the next 3 lines
@@ -293,6 +294,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     for dev_step in range(batches_num_dev):
                         batch_x_dev, batch_y_dev = get_batch_sequential(l_dev_x, l_dev_y, dev_step, BATCH_SIZE)
                         if len(batch_y_dev) != BATCH_SIZE:
+                            print('len(batch_y_dev) != BATCH_SIZE - {}'.format(len(batch_y_dev)))
                             continue
                         _, _, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
                         # #if you like to print the dev data performance, replace the above line with the next 3 lines
