@@ -8,11 +8,11 @@ import tensorflow as tf
 import logging
 from collections import defaultdict
 import io
+import sys
 # import pickle
 # import json
 # import pandas as pd
 # from collections import Counter
-# import sys
 # import itertools
 # import zipfile
 # import csv
@@ -304,7 +304,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                             true_val = int(np.argmax(batch_y_dev[p]))
                             true_lbl = gl_ind_to_label[true_val]
                             stat_dict_step_total[true_lbl] += 1
-                            if l_predictions[p]:
+                            if bool(l_predictions[p]) is True:
                                 stat_dict_step_correct[true_lbl] += 1
 
                         total_correct += int(batch_num_correct_dev)  # sum correct predictions for acc
