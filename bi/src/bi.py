@@ -40,8 +40,10 @@ DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
 # existing FILES
-MODEL_PATH = '../model_temp/model.ckpt'  # NOT used if USE_TMP_FOLDER is TRUE !!!
+MODEL_PATH = '../model_temp/model.ckpt'  # Should set it to model path if TRAIN = False
 USE_TMP_FOLDER = True
+TRAIN = False
+TEST = True
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 
 
@@ -174,7 +176,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
         lstm_bw_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     print("lstm_bw_cell units: {}".format(LSTM_HIDDEN_UNITS))
     lstm_bw_cell = tf.nn.rnn_cell.DropoutWrapper(cell=lstm_bw_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    
+
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, data, dtype=tf.float32)
 
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
@@ -392,8 +394,10 @@ if __name__ == '__main__':
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label = load_data(DATA_FILE_PATH)
     input_data, input_labels, keep_prob, optimizer, loss, accuracy, num_correct, predictions = get_bidirectional_rnn_model(emb_mat)
-    # MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
-    test_acc = test(MODEL_PATH, test_x, test_y)
+    if TRAIN:
+        MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
+    if TEST:
+        test_acc = test(MODEL_PATH, test_x, test_y)
     dur = time.time() - total_start_time
     data_size = len(train_y) + len(dev_y) + len(test_y)
     args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, int(dur))
