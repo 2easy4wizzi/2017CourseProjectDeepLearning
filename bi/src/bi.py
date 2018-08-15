@@ -20,7 +20,7 @@ import sys
 
 logging.getLogger().setLevel(logging.INFO)
 
-LINE_FROM_CLASS = 5000
+LINE_FROM_CLASS = 50000
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 64
@@ -35,19 +35,22 @@ DATA_DIR = 'input/'
 EMB_FILE = 'glove.6B.50d.txt'
 EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
+DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE = '2way_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
+UNIT_TESTING = False  # will print test results
+
 MODEL_PATH = '../model_temp/model.ckpt'  # Should set it to model path if TRAIN = False
 USE_TMP_FOLDER = True
 TRAIN = True
 TEST = True
-PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
+# # PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 
 # uncomment for local run
-# DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '2way_super_short_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 # EPOCHS = 3
 # BATCH_SIZE = 10
@@ -107,6 +110,11 @@ def load_data(data_full_path, shuffle=False):
     print('Our {} labels to index dictionary ={}'.format(len(l_unique_labels_to_ind), l_unique_labels_to_ind))
     print('Our {} index to labels dictionary ={}'.format(len(l_unique_ind_to_labels), l_unique_ind_to_labels))
 
+    if UNIT_TESTING:
+        print('\t\t\t\t\t{} LOAD_DATA({}): len(all_lines)==10K?'.format(len(all_lines) == 10000, DATA_FILE))
+        print('\t\t\t\t\t{} LOAD_DATA({}): all_lines[0] start with \'us i think if you\'?'.format(all_lines[0].startswith('us i think if you'), DATA_FILE))
+        print('\t\t\t\t\t{} LOAD_DATA({}): all_lines[-1] start with \'us if slovenia did nt\'?'.format(all_lines[-1].startswith('us if slovenia did nt'), DATA_FILE))  # 2 way us rus
+
     for i in range(len(labels_str)):
         labels_int.append(l_unique_labels_to_ind[labels_str[i]])
 
@@ -130,10 +138,29 @@ def load_data(data_full_path, shuffle=False):
     l_train_x = l_train_dev_x[:split_ind2]
     l_train_y = l_train_dev_y[:split_ind2]
 
-    # convert words to their index in the embedding matrix
+    if UNIT_TESTING:
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[0] which is line {} start with \'i\'?'.format(l_train_x[0][0] == 'i', DATA_FILE, 1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_train_y[0]] == 'us', DATA_FILE, 1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[-1] which is line {} start with \'not\'?'.format(l_train_x[-1][0] == 'not', DATA_FILE, split_ind2))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_y[-1] which is line {} is us?'.format(l_unique_ind_to_labels[l_train_y[-1]] == 'us', DATA_FILE, split_ind2))
+
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[0] which is line {} start with \'the\'?'.format(l_dev_x[0][0] == 'the', DATA_FILE, split_ind2+1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_dev_y[0]] == 'us', DATA_FILE, split_ind2+1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[-1] which is line {} start with \'the\'?'.format(l_dev_x[-1][0] == 'the', DATA_FILE, len(l_train_dev_y)))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_y[-1] which is line {} is russia?'.format(l_unique_ind_to_labels[l_dev_y[-1]] == 'russia', DATA_FILE, len(l_train_dev_y)))
+
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[0] which is line {} start with \'but\'?'.format(l_test_x[0][0] == 'but', DATA_FILE, split_ind+1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_test_y[0]] == 'us', DATA_FILE, split_ind+1))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[-1] which is line {} start with \'if\'?'.format(l_test_x[-1][0] == 'if', DATA_FILE, len(all_lines)))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_y[-1] which is line {} is us?'.format(l_unique_ind_to_labels[l_test_y[-1]] == 'us', DATA_FILE, len(all_lines)))
+
     l_train_x = convert_data_to_word_indices(l_train_x)
     l_dev_x = convert_data_to_word_indices(l_dev_x)
     l_test_x = convert_data_to_word_indices(l_test_x)
+    if UNIT_TESTING:
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[0].item(0, 0) (which is \'i\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_train_x[0].item(0, 0) == gl_word_to_emb_mat_ind['i'], DATA_FILE))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[0].item(0, 0) (which is \'the\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_dev_x[0].item(0, 0) == gl_word_to_emb_mat_ind['the'], DATA_FILE))
+        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[0].item(0, 0) (which is \'but\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_test_x[0].item(0, 0) == gl_word_to_emb_mat_ind['but'], DATA_FILE))
 
     print('x_train: {}, x_dev: {}, x_test: {}'.format(len(l_train_x), len(l_dev_x), len(l_test_x)))
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(l_train_y), len(l_dev_y), len(l_test_y)))
@@ -157,6 +184,12 @@ def load_emb(emb_full_path):
     # adding one more entry for all words that doesn't exist in the emb_full_path 
     l_emb_mat.append(np.zeros(EMB_DIM, dtype='float32'))
     print('Embedding tokens size={}'.format(len(l_emb_mat)))
+    if UNIT_TESTING:
+        print('\t\t\t\t\t{} EMB: len(l_word_to_emb_mat_ind)==400K?'.format(len(l_word_to_emb_mat_ind) == 400000))
+        print('\t\t\t\t\t{} EMB: l_word_to_emb_mat_ind[\'people\']==69?'.format(l_word_to_emb_mat_ind['people'] == 69))
+        print('\t\t\t\t\t{} EMB: len(l_emb_mat)==400001?'.format(l_word_to_emb_mat_ind['people'] == 69))
+        a = str(l_emb_mat[l_word_to_emb_mat_ind['people']][0])
+        print('\t\t\t\t\t{} EMB: l_emb_mat[l_word_to_emb_mat_ind[\'people\']] start with 0.95281?'.format(a == '0.95281'))
     return l_word_to_emb_mat_ind, np.matrix(l_emb_mat, dtype='float32')
 
 
@@ -174,20 +207,20 @@ def get_bidirectional_rnn_model(l_emb_mat):
     # if LSTM_TYPE == 'basic':
     #     lstm_fw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
     # else:
-    #     lstm_fw_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
+    lstm_fw_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    # lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
     print("lstm_fw_cell units: {}".format(LSTM_HIDDEN_UNITS))
     lstm_fw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_fw_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
     # if LSTM_TYPE == 'basic':
     #     lstm_bw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
     # else:
-    #     lstm_bw_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
+    lstm_bw_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    # lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
     print("lstm_bw_cell units: {}".format(LSTM_HIDDEN_UNITS))
     lstm_bw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_bw_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
-    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, data, dtype=tf.float32)
+    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=lstm_fw_cell, cell_bw=lstm_bw_cell, inputs=data, dtype=tf.float32)
 
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
@@ -198,25 +231,30 @@ def get_bidirectional_rnn_model(l_emb_mat):
     outputs_as_value = tf.gather(outputs_as_vecs, int(outputs_as_vecs.get_shape()[0]) - 1)
     prediction = (tf.matmul(outputs_as_value, weight) + bias)
 
-    correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(input_labels_batch, 1))
-    l_num_correct = tf.reduce_sum(tf.cast(correct_pred, tf.float32))
+    l_correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(input_labels_batch, 1))
+    l_num_correct = tf.reduce_sum(tf.cast(l_correct_pred, tf.float32))
 
-    acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    acc = tf.reduce_mean(tf.cast(l_correct_pred, tf.float32))
 
     l_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=input_labels_batch))
-    l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08).minimize(l_loss)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_loss, acc, l_num_correct, correct_pred
+    # l_loss = tf.reduce_mean(tf.squared_difference(prediction, input_labels_batch))
+    l_global_step = tf.Variable(0, name='global_step', trainable=False)
+    # l_loss = tf.Print(l_loss, [l_loss, outputs_as_vecs, outputs_as_value])
+    l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
+    grads_and_vars = l_optimizer.compute_gradients(l_loss)
+    l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
 
 
 def convert_to_array(label_value):
     label_zero_one_vec = [0] * len(gl_label_to_ind)
-    label_zero_one_vec[label_value - 1] = 1
+    label_zero_one_vec[label_value] = 1
     return label_zero_one_vec
 
 
 def get_batch_sequential(data_x, data_y, batch_num, batch_size):
-    batch = data_x[batch_num * batch_size:(batch_num + 1) * batch_size]
-    labels = [convert_to_array(label) for label in data_y[batch_num * batch_size:(batch_num + 1) * batch_size]]
+    batch = data_x[batch_num * batch_size: (batch_num + 1) * batch_size]
+    labels = [convert_to_array(label) for label in data_y[batch_num * batch_size: (batch_num + 1) * batch_size]]
 
     return batch, labels
 
@@ -226,7 +264,7 @@ def train_step_func(sess, x_batch, y_batch):
                  input_labels: y_batch,
                  keep_prob: KEEP_PROB
                  }
-    _, batch_loss_trn, batch_acc_trn = sess.run([optimizer, loss, accuracy], feed_dict)
+    _, gs, batch_loss_trn, batch_acc_trn = sess.run([train_op, global_step, loss, accuracy], feed_dict)
     return batch_loss_trn, batch_acc_trn
 
 
@@ -234,10 +272,7 @@ def dev_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
                  keep_prob: 1.0}
-    batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions = sess.run([loss, accuracy, num_correct, predictions], feed_dict)
-    # loss_l, accuracy_l, num_correct, predictions_l = sess.run(
-    #     [cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
-    # return accuracy_l, loss_l, num_correct, predictions_l
+    batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions = sess.run([loss, accuracy, num_correct, correct_pred], feed_dict)
     return batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions
 
 
@@ -278,6 +313,24 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
+                # # print(l_train_x[0])
+                # # print(batch_x_trn[0])
+                # print(l_train_y[0:5])
+                # print(batch_y_trn[0:5])
+                # true_val = int(np.argmax(batch_y_trn[0]))
+                # true_lbl = gl_ind_to_label[true_val]
+                # print(true_lbl)
+                # true_val = int(np.argmax(batch_y_trn[5]))
+                # true_lbl = gl_ind_to_label[true_val]
+                # print(true_lbl)
+                #
+                # # print(l_train_y[1])
+                # # print(batch_y_trn[1])
+                # # print(l_train_y[2])
+                # # print(batch_y_trn[2])
+                # # print(l_train_y[3])
+                # # print(batch_y_trn[3])
+                # sys.exit(0)
                 if len(batch_y_trn) != BATCH_SIZE:
                     print('len(batch_y_trn) != BATCH_SIZE - {}'.format(len(batch_y_trn)))
                     continue
@@ -302,6 +355,9 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                         # msg = "        DEV: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
                         # print(msg.format(dev_step + 1, batches_num_dev - 1, batch_acc_dev * 100, batch_loss_dev))
 
+                        # print(batch_num_correct_dev, BATCH_SIZE)
+                        # print(l_predictions)
+                        # print(batch_y_dev)
                         for p in range(len(l_predictions)):  # calculating acc per class
                             true_val = int(np.argmax(batch_y_dev[p]))
                             true_lbl = gl_ind_to_label[true_val]
@@ -408,7 +464,7 @@ if __name__ == '__main__':
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label = load_data(DATA_FILE_PATH)
-    input_data, input_labels, keep_prob, optimizer, loss, accuracy, num_correct, predictions = get_bidirectional_rnn_model(emb_mat)
+    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
     if TRAIN:
         MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
     if TEST:
