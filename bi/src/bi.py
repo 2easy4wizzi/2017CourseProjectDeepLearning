@@ -9,14 +9,6 @@ import logging
 from collections import defaultdict
 import io
 import sys
-# import pickle
-# import json
-# import pandas as pd
-# from collections import Counter
-# import itertools
-# import zipfile
-# import csv
-# from sklearn.model_selection import train_test_split
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -29,7 +21,7 @@ EPOCHS = 100
 BATCH_SIZE = 100
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
-# GENERAL VARS
+
 PRO_FLD = '../'
 DATA_DIR = 'input/'
 EMB_FILE = 'glove.6B.50d.txt'
@@ -37,7 +29,6 @@ EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE = '2way_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -47,7 +38,6 @@ MODEL_PATH = '../model_temp/model.ckpt'  # Should set it to model path if TRAIN 
 USE_TMP_FOLDER = True
 TRAIN = True
 TEST = True
-# # PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 
 # uncomment for local run
 # DATA_FILE = '2way_super_short_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
@@ -471,5 +461,5 @@ if __name__ == '__main__':
         test_acc = test(MODEL_PATH, test_x, test_y)
     dur = time.time() - total_start_time
     data_size = len(train_y) + len(dev_y) + len(test_y)
-    # args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, int(dur))
+    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, int(dur))
     print("Leaving function __main__")
