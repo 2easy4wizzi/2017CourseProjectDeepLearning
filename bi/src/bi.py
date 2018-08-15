@@ -12,7 +12,6 @@ import sys
 
 logging.getLogger().setLevel(logging.INFO)
 
-LINE_FROM_CLASS = 50000
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 64
@@ -28,7 +27,8 @@ EMB_FILE = 'glove.6B.50d.txt'
 EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '2way_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -40,7 +40,8 @@ TRAIN = True
 TEST = True
 
 # uncomment for local run
-# DATA_FILE = '2way_super_short_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '2way_duplicated_data_rus_usa25-150{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 # EPOCHS = 3
 # BATCH_SIZE = 10
@@ -101,6 +102,8 @@ def load_data(data_full_path, shuffle=False):
         l_unique_labels_to_ind[l_unique_labels_list[i]] = i
         l_unique_ind_to_labels[i] = l_unique_labels_list[i]
 
+    line_from_class = len(all_lines)/len(l_unique_labels_to_ind)
+    print(LINE_FROM_CLASS)
     print('Our {} labels to index dictionary ={}'.format(len(l_unique_labels_to_ind), l_unique_labels_to_ind))
     print('Our {} index to labels dictionary ={}'.format(len(l_unique_ind_to_labels), l_unique_ind_to_labels))
 
@@ -159,7 +162,7 @@ def load_data(data_full_path, shuffle=False):
     print('x_train: {}, x_dev: {}, x_test: {}'.format(len(l_train_x), len(l_dev_x), len(l_test_x)))
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(l_train_y), len(l_dev_y), len(l_test_y)))
 
-    return l_train_x, l_train_y, l_dev_x, l_dev_y, l_test_x, l_test_y, l_unique_labels_to_ind, l_unique_ind_to_labels
+    return l_train_x, l_train_y, l_dev_x, l_dev_y, l_test_x, l_test_y, l_unique_labels_to_ind, l_unique_ind_to_labels, line_from_class
 
 
 # creates 2 objects
@@ -397,14 +400,14 @@ def test(l_model_full_path, l_test_x, l_test_y):
 
 
 # print summary of the run
-def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, duration=0):
+def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_class, duration=0):
     print("{} ----------------------".format(stage))
     print("data:")
     print("     DATA_FILE_PATH is {}".format(DATA_FILE_PATH))
     print("     MINIMUM_ROW_LENGTH is {}".format(MINIMUM_ROW_LENGTH))
     print("     MAXIMUM_ROW_LENGTH is {}".format(MAXIMUM_ROW_LENGTH))
     print("     COUNT_WORD is {}".format(COUNT_WORD))
-    print("     LINE_FROM_CLASS is {}".format(LINE_FROM_CLASS))
+    print("     LINE_FROM_CLASS is {}".format(l_lines_per_class))
     print("     number of classes is {}".format(len(gl_label_to_ind)))
     print("     Total data size is {}".format(l_data_size))
 
@@ -441,7 +444,7 @@ if __name__ == '__main__':
     total_start_time, trn_acc, test_acc = time.time(), 0, 0
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
-    train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label = load_data(DATA_FILE_PATH)
+    train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
     input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
     if TRAIN:
         MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
@@ -449,5 +452,5 @@ if __name__ == '__main__':
         test_acc = test(MODEL_PATH, test_x, test_y)
     dur = time.time() - total_start_time
     data_size = len(train_y) + len(dev_y) + len(test_y)
-    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, int(dur))
+    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, lines_per_class, int(dur))
     print("Leaving function __main__")
