@@ -1,4 +1,5 @@
-dynamic learning rate
+dynamic learning rate 
+	start with 0.01 if acc doesn't improve 5 epochs learn/=2; if learn < (bound = 0.0001): learn = bound
 different opt
 	adam
 	rmsprop

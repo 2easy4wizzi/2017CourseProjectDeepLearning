@@ -27,8 +27,8 @@ EMB_FILE = 'glove.6B.50d.txt'
 EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -103,7 +103,6 @@ def load_data(data_full_path, shuffle=False):
         l_unique_ind_to_labels[i] = l_unique_labels_list[i]
 
     line_from_class = len(all_lines)/len(l_unique_labels_to_ind)
-    print(LINE_FROM_CLASS)
     print('Our {} labels to index dictionary ={}'.format(len(l_unique_labels_to_ind), l_unique_labels_to_ind))
     print('Our {} index to labels dictionary ={}'.format(len(l_unique_ind_to_labels), l_unique_ind_to_labels))
 
@@ -407,7 +406,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     print("     MINIMUM_ROW_LENGTH is {}".format(MINIMUM_ROW_LENGTH))
     print("     MAXIMUM_ROW_LENGTH is {}".format(MAXIMUM_ROW_LENGTH))
     print("     COUNT_WORD is {}".format(COUNT_WORD))
-    print("     LINE_FROM_CLASS is {}".format(l_lines_per_class))
+    print("     lines_per_class is {}".format(l_lines_per_class))
     print("     number of classes is {}".format(len(gl_label_to_ind)))
     print("     Total data size is {}".format(l_data_size))
 
