@@ -1,0 +1,10 @@
+dynamic learning rate
+different opt
+	adam
+	rmsprop
+	adagrad
+
+hidden units 
+bach size
+change emb file
+multi cell

@@ -247,6 +247,7 @@ def get_batch_sequential(data_x, data_y, batch_num, batch_size):
     return batch, labels
 
 
+# happen each train step - EFFECTS WEIGHTS !
 def train_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
@@ -256,6 +257,7 @@ def train_step_func(sess, x_batch, y_batch):
     return batch_loss_trn, batch_acc_trn
 
 
+# happen each dev step or test step - DOESN'T effect weights !
 def dev_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
@@ -264,6 +266,8 @@ def dev_step_func(sess, x_batch, y_batch):
     return batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions
 
 
+# allows us to analyze the accuracy by printing the recall of each class
+# prints all classes in turn with their accuracy
 def print_stats(stat_dict_total, stat_dict_correct):
     longest_key = 0
     for key in stat_dict_total:
@@ -279,6 +283,7 @@ def print_stats(stat_dict_total, stat_dict_correct):
     return
 
 
+# trains the model on train data and evaluates the model 3 times per epoch on dev data
 def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
     timestamp = str(int(time.time()))
     if USE_TMP_FOLDER:
@@ -301,24 +306,6 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
-                # # print(l_train_x[0])
-                # # print(batch_x_trn[0])
-                # print(l_train_y[0:5])
-                # print(batch_y_trn[0:5])
-                # true_val = int(np.argmax(batch_y_trn[0]))
-                # true_lbl = gl_ind_to_label[true_val]
-                # print(true_lbl)
-                # true_val = int(np.argmax(batch_y_trn[5]))
-                # true_lbl = gl_ind_to_label[true_val]
-                # print(true_lbl)
-                #
-                # # print(l_train_y[1])
-                # # print(batch_y_trn[1])
-                # # print(l_train_y[2])
-                # # print(batch_y_trn[2])
-                # # print(l_train_y[3])
-                # # print(batch_y_trn[3])
-                # sys.exit(0)
                 if len(batch_y_trn) != BATCH_SIZE:
                     print('len(batch_y_trn) != BATCH_SIZE - {}'.format(len(batch_y_trn)))
                     continue
@@ -373,6 +360,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
     return model_full_path, best_accuracy
 
 
+# restores the model from saved folder and test it on test data
+# notice if you run test only, you need to set the MODEL_PATH to the model checkpoint file
 def test(l_model_full_path, l_test_x, l_test_y):
     print('***Testing...')
     session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -407,6 +396,7 @@ def test(l_model_full_path, l_test_x, l_test_y):
     return l_test_acc
 
 
+# print summary of the run
 def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, duration=0):
     print("{} ----------------------".format(stage))
     print("data:")
