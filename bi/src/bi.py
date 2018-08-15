@@ -16,7 +16,7 @@ LINE_FROM_CLASS = 50000
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 64
-LSTM_TYPE = 'basic'
+LSTM_TYPE = 'GRU'
 EPOCHS = 100
 BATCH_SIZE = 100
 KEEP_PROB = 0.5
@@ -48,7 +48,7 @@ TEST = True
 # SHOULD_SAVE = False
 
 
-def clean_str(s):  # DATA
+def clean_str(s):  # removing all chars but letters, numbers, spaces, commas and dots
     strip_special_chars = re.compile("[^A-Za-z0-9 ,.]+")
     s = s.lower().replace("<br />", " ")
     return re.sub(strip_special_chars, "", s)
@@ -66,6 +66,7 @@ def convert_data_to_indices_of_emb_mat(sentence):
     return words_ind
 
 
+# piles the new representation of the sentences in a matrix (@see  convert_data_to_indices_of_emb_mat(sentence))
 def convert_data_to_word_indices(data_x):
     data_x_emb_indices = []
     for sentence in data_x:
@@ -73,6 +74,9 @@ def convert_data_to_word_indices(data_x):
     return np.matrix(data_x_emb_indices)
 
 
+# loads and prepare data (creates train,dev,test datum. also 2 dicts to help convert class value to class label)
+# data_x will return in the shape of indices in the embedding matrix.
+# data_t will return in the shape of numeric value of the class stored in the 2 dicts
 def load_data(data_full_path, shuffle=False):
     all_lines, data_x, labels_str, labels_int = [], [], [], []
     with io.open(data_full_path, 'r', encoding="utf-8") as data_file:
@@ -183,6 +187,7 @@ def load_emb(emb_full_path):
     return l_word_to_emb_mat_ind, np.matrix(l_emb_mat, dtype='float32')
 
 
+# bidirectional model creation
 def get_bidirectional_rnn_model(l_emb_mat):
     tf.reset_default_graph()
     num_classes = len(gl_label_to_ind)
@@ -194,23 +199,15 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     data = tf.nn.embedding_lookup(l_emb_mat, input_data_x_batch)
 
-    # if LSTM_TYPE == 'basic':
-    #     lstm_fw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
-    # else:
-    lstm_fw_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
-    print("lstm_fw_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    lstm_fw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_fw_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_forward_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
+    gru_forward_cell = tf.contrib.rnn.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
-    # if LSTM_TYPE == 'basic':
-    #     lstm_bw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
-    # else:
-    lstm_bw_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(num_units=LSTM_HIDDEN_UNITS)
-    print("lstm_bw_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    lstm_bw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_bw_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_backward_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
+    gru_backward_cell = tf.contrib.rnn.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
-    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=lstm_fw_cell, cell_bw=lstm_bw_cell, inputs=data, dtype=tf.float32)
+    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=gru_forward_cell, cell_bw=gru_backward_cell, inputs=data, dtype=tf.float32)
 
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
@@ -227,7 +224,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
     acc = tf.reduce_mean(tf.cast(l_correct_pred, tf.float32))
 
     l_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=input_labels_batch))
-    # l_loss = tf.reduce_mean(tf.squared_difference(prediction, input_labels_batch))
+
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
     # l_loss = tf.Print(l_loss, [l_loss, outputs_as_vecs, outputs_as_value])
     l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
@@ -236,16 +233,17 @@ def get_bidirectional_rnn_model(l_emb_mat):
     return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
 
 
+# e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
 def convert_to_array(label_value):
     label_zero_one_vec = [0] * len(gl_label_to_ind)
     label_zero_one_vec[label_value] = 1
     return label_zero_one_vec
 
 
+# gets a portion of the data in the batch_num index
 def get_batch_sequential(data_x, data_y, batch_num, batch_size):
     batch = data_x[batch_num * batch_size: (batch_num + 1) * batch_size]
     labels = [convert_to_array(label) for label in data_y[batch_num * batch_size: (batch_num + 1) * batch_size]]
-
     return batch, labels
 
 
