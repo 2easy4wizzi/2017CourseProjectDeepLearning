@@ -14,10 +14,10 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 64
+LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
 EPOCHS = 20
-BATCH_SIZE = 100
+BATCH_SIZE = 300
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
 
@@ -214,8 +214,8 @@ def get_bidirectional_rnn_model(l_emb_mat):
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
 
-    weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]))
-    bias = tf.Variable(tf.constant(0.1, shape=[num_classes]))
+    weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
+    bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
 
     outputs_as_value = tf.gather(outputs_as_vecs, int(outputs_as_vecs.get_shape()[0]) - 1)
     prediction = (tf.matmul(outputs_as_value, weight) + bias)
@@ -440,6 +440,24 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     return
 
 
+def _print_var_name_and_shape(should_print):
+    l_total_parameters, variable_parameters = 0, 0
+    if should_print:
+        print("---vars name and shapes---")
+    for variable in tf.trainable_variables():
+        shape = variable.get_shape()
+        variable_parameters = 1
+        for dim in shape:
+            variable_parameters *= dim.value
+        if should_print:
+            print(variable.name, shape, variable_parameters)
+        l_total_parameters += variable_parameters
+    if should_print:
+        print("total PARAM {:,}".format(l_total_parameters))
+        print("---done vars---")
+    return l_total_parameters
+
+
 if __name__ == '__main__':
     print("Entering function __main__")
     total_start_time, trn_acc, test_acc = time.time(), 0, 0
@@ -447,6 +465,7 @@ if __name__ == '__main__':
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
     input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
+    _print_var_name_and_shape(True)
     if TRAIN:
         MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
     if TEST:

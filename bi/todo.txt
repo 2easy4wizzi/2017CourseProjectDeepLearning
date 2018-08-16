@@ -12,7 +12,7 @@ V bach size
 X change emb file
 X multi cell
 X enlarge data file
-
+X initializer=tf.contrib.layers.xavier_initializer()
 
 
 
