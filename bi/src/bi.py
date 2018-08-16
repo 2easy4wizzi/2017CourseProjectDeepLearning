@@ -320,7 +320,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                 # print(msg.format(train_step + 1, batches_num_train - 1, batch_acc_trn * 100, batch_loss_trn))
 
                 # check on dev data 3 times per epoch
-                if train_step == 0 or train_step == int(batches_num_train/2) or (train_step == batches_num_train - 1):
+                if train_step == 0 or train_step == int(batches_num_train/2):
                     total_correct, total_seen, dev_acc = 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):
@@ -419,7 +419,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
 
     print("run config:")
     print("     EPOCHS {}".format(EPOCHS))
-    print("     evaluating on dev data 3 times per epoch")
+    print("     evaluating on dev data 2 times per epoch")
     print("     KEEP_PROB {}".format(KEEP_PROB))
     print("     BATCH_SIZE {}".format(BATCH_SIZE))
     print("     LSTM_HIDDEN_UNITS {}".format(LSTM_HIDDEN_UNITS))
