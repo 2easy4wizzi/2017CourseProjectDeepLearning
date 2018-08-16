@@ -9,3 +9,28 @@ hidden units
 bach size
 change emb file
 multi cell
+
+
+
+
+tasks(20 epochs): 
+
+1) 2way_rus_usa_v2_25-150
+	dynamic learning rate
+	score
+		trian
+		test
+2) 5way
+	score
+		trian
+		test
+3) 4way
+	dynamic learning rate
+	score
+		trian
+		test
+4) 4way
+	dynamic learning rate
+	score
+		trian
+		test

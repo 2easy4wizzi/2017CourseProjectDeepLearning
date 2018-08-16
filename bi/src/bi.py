@@ -14,9 +14,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 64
+LSTM_HIDDEN_UNITS = 128
 LSTM_TYPE = 'GRU'
-EPOCHS = 100
+EPOCHS = 20
 BATCH_SIZE = 100
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -26,9 +26,9 @@ DATA_DIR = 'input/'
 EMB_FILE = 'glove.6B.50d.txt'
 EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
-DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -84,7 +84,7 @@ def load_data(data_full_path, shuffle=False):
         for line in data_file:
             all_lines.append(clean_str(line))
 
-    print('Total data size is {}'.format(len(all_lines)))
+    print('File name {}. Total data size is {}'.format(DATA_FILE, len(all_lines)))
     if shuffle:
         np.random.shuffle(all_lines)  # will affect the train test split
 
@@ -177,7 +177,7 @@ def load_emb(emb_full_path):
             embedding = np.array([float(val) for val in split_line[1:]], dtype='float32')
             l_emb_mat.append(embedding)
 
-    # adding one more entry for all words that doesn't exist in the emb_full_path 
+    # adding one more entry for all words that doesn't exist in the emb_full_path
     l_emb_mat.append(np.zeros(EMB_DIM, dtype='float32'))
     print('Embedding tokens size={}'.format(len(l_emb_mat)))
     if UNIT_TESTING:
@@ -263,7 +263,8 @@ def train_step_func(sess, x_batch, y_batch):
 def dev_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
-                 keep_prob: 1.0}
+                 keep_prob: 1.0
+                 }
     batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions = sess.run([loss, accuracy, num_correct, correct_pred], feed_dict)
     return batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions
 
@@ -423,6 +424,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     print("     BATCH_SIZE {}".format(BATCH_SIZE))
     print("     LSTM_HIDDEN_UNITS {}".format(LSTM_HIDDEN_UNITS))
     print("     LSTM_CELL_TYPE {}".format(LSTM_TYPE))
+    print("     optimizer is adamOptimizer - learn rate:0.001")
 
     print("model:")
     print("     USE_TMP_FOLDER {}".format(USE_TMP_FOLDER))
