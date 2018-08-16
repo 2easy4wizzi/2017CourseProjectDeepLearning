@@ -14,7 +14,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 128
+LSTM_HIDDEN_UNITS = 64
 LSTM_TYPE = 'GRU'
 EPOCHS = 20
 BATCH_SIZE = 100
@@ -230,6 +230,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
     # l_loss = tf.Print(l_loss, [l_loss, outputs_as_vecs, outputs_as_value])
     l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
+
     grads_and_vars = l_optimizer.compute_gradients(l_loss)
     l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
     return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
@@ -423,7 +424,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     print("     BATCH_SIZE {}".format(BATCH_SIZE))
     print("     LSTM_HIDDEN_UNITS {}".format(LSTM_HIDDEN_UNITS))
     print("     LSTM_CELL_TYPE {}".format(LSTM_TYPE))
-    print("     optimizer is adamOptimizer - learn rate:0.001")
+    print("     optimizer is adamOptimizer - learn rate:  0.001")
 
     print("model:")
     print("     USE_TMP_FOLDER {}".format(USE_TMP_FOLDER))
