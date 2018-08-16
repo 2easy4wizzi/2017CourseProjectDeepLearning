@@ -16,3 +16,4 @@ cr/data/*.zip
 bi/input/glove.6B.zip
 bi/input/glove.6B.50d.txt
 bi/model_temp/*
+bi/docs/2. 5way-learn_rate_comapre/~$*
