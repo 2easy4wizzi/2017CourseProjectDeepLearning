@@ -1,36 +1,18 @@
-dynamic learning rate 
+V dynamic learning rate 
 	start with 0.01 if acc doesn't improve 5 epochs learn/=2; if learn < (bound = 0.0001): learn = bound
 different opt
 	adam
 	rmsprop
 	adagrad
 
-hidden units 
-bach size
-change emb file
-multi cell
+V hidden units 
+	try 300 like static rnn project
+V bach size
+	tried 100, 200, 300
+X change emb file
+X multi cell
+X enlarge data file
 
 
 
 
-tasks(20 epochs): 
-
-1) 2way_rus_usa_v2_25-150
-	dynamic learning rate
-	score
-		trian
-		test
-2) 5way
-	score
-		trian
-		test
-3) 4way
-	dynamic learning rate
-	score
-		trian
-		test
-4) 4way
-	dynamic learning rate
-	score
-		trian
-		test

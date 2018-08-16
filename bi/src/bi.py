@@ -418,7 +418,6 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
 
     print("run config:")
     print("     EPOCHS {}".format(EPOCHS))
-    print("     BATCH_SIZE {}".format(BATCH_SIZE))
     print("     evaluating on dev data 3 times per epoch")
     print("     KEEP_PROB {}".format(KEEP_PROB))
     print("     BATCH_SIZE {}".format(BATCH_SIZE))
