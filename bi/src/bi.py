@@ -361,7 +361,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             print("###################################################################################################")
         train_msg = '***Training is complete. Best accuracy {:.4f}% at epoch {}/{}'
         print(train_msg.format(best_accuracy * 100, best_at_epoch, EPOCHS))
-    return model_full_path, best_accuracy
+    return model_full_path, best_accuracy, best_at_epoch
 
 
 # restores the model from saved folder and test it on test data
@@ -401,7 +401,7 @@ def test(l_model_full_path, l_test_x, l_test_y):
 
 
 # print summary of the run
-def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_class, duration=0):
+def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_class, l_best_epoch, duration=0):
     print("{} ----------------------".format(stage))
     print("data:")
     print("     DATA_FILE_PATH is {}".format(DATA_FILE_PATH))
@@ -431,7 +431,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     print("     mdl_path {}".format(mdl_path))
 
     print("results:")
-    print("     best training acc {}".format(l_trn_acc * 100))
+    print("     best training acc at epoch={} is {}".format(best_epoch, l_trn_acc * 100))
     print("     testing acc {}".format(l_test_acc * 100))
 
     hours, rem = divmod(duration, 3600)
@@ -467,10 +467,10 @@ if __name__ == '__main__':
     input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
-        MODEL_PATH, trn_acc = train(train_x, train_y, dev_x, dev_y)
+        MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)
     if TEST:
         test_acc = test(MODEL_PATH, test_x, test_y)
     dur = time.time() - total_start_time
     data_size = len(train_y) + len(dev_y) + len(test_y)
-    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, lines_per_class, int(dur))
+    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, lines_per_class, best_epoch, int(dur))
     print("Leaving function __main__")
