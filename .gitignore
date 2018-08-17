@@ -18,3 +18,6 @@ bi/input/glove.6B.50d.txt
 bi/model_temp/*
 bi/docs/2. 5way-learn_rate_comapre/~$*
 bi/docs/~$*
+bi/input/glove.6B.100d.txt
+bi/input/glove.6B.200d.txt
+bi/input/glove.6B.300d.txt
