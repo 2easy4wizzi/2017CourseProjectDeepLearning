@@ -17,7 +17,7 @@ MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
 EPOCHS = 20
-BATCH_SIZE = 300
+BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
 
@@ -27,8 +27,8 @@ EMB_FILE = 'glove.6B.50d.txt'
 EMB_DIM = 50
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 # DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
