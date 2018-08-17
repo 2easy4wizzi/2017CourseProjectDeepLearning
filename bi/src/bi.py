@@ -16,19 +16,19 @@ MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
-EPOCHS = 20
+EPOCHS = 10
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
 
 PRO_FLD = '../'
 DATA_DIR = 'input/'
-EMB_FILE = 'glove.6B.50d.txt'
-EMB_DIM = 50
+EMB_FILE = 'glove.6B.300d.txt'
+EMB_DIM = 300
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 # DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -41,7 +41,7 @@ TEST = True
 
 # uncomment for local run
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '2way_duplicated_data_rus_usa25-150{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 # EPOCHS = 3
 # BATCH_SIZE = 10
@@ -201,21 +201,27 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     data = tf.nn.embedding_lookup(l_emb_mat, input_data_x_batch)
 
-    gru_forward_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    gru_forward_cell = tf.contrib.rnn.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
-    gru_backward_cell = tf.contrib.rnn.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    gru_backward_cell = tf.contrib.rnn.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
-    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=gru_forward_cell, cell_bw=gru_backward_cell, inputs=data, dtype=tf.float32)
+    outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
 
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
 
-    weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
-    bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
+    # weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
+    weight = tf.get_variable(name='weight', shape=[2 * LSTM_HIDDEN_UNITS, num_classes], initializer=tf.contrib.layers.xavier_initializer())
+    # bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
+    bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.contrib.layers.xavier_initializer())
 
     outputs_as_value = tf.gather(outputs_as_vecs, int(outputs_as_vecs.get_shape()[0]) - 1)
     prediction = (tf.matmul(outputs_as_value, weight) + bias)
@@ -319,8 +325,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                 # msg = "    TRAIN: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
                 # print(msg.format(train_step + 1, batches_num_train - 1, batch_acc_trn * 100, batch_loss_trn))
 
-                # check on dev data 3 times per epoch
-                if train_step == 0 or train_step == int(batches_num_train/2):
+                # check on dev data 2 times per epoch
+                if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
                     total_correct, total_seen, dev_acc = 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):

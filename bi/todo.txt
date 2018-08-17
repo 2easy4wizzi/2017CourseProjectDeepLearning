@@ -9,10 +9,10 @@ V hidden units
 	try 300 like static rnn project
 V bach size
 	tried 100, 200, 300
-X change emb file
-X multi cell
+V change emb file
+V multi cell
 X enlarge data file
-X initializer=tf.contrib.layers.xavier_initializer()
+V initializer=tf.contrib.layers.xavier_initializer()
 
 
 
