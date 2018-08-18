@@ -14,9 +14,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 150
+LSTM_HIDDEN_UNITS = 100
 LSTM_TYPE = 'GRU'
-EPOCHS = 20
+EPOCHS = 10
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -28,7 +28,8 @@ EMB_DIM = 300
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 # DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '5way_tur_ger_rus_fra_usa100K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
@@ -205,7 +206,8 @@ def get_bidirectional_rnn_model(l_emb_mat):
     gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_forward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_forward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2, gru_forward_cell3, gru_forward_cell4])
+    gru_forward_cell5 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2, gru_forward_cell3, gru_forward_cell4, gru_forward_cell5])
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
     multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
@@ -213,7 +215,8 @@ def get_bidirectional_rnn_model(l_emb_mat):
     gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_backward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_backward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2, gru_backward_cell3, gru_backward_cell4])
+    gru_backward_cell5 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2, gru_backward_cell3, gru_backward_cell4, gru_backward_cell5])
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
     multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
@@ -475,7 +478,7 @@ def _print_var_name_and_shape(should_print):
 
 if __name__ == '__main__':
     print("Entering function __main__")
-    total_start_time, trn_acc, test_acc = time.time(), 0, 0
+    total_start_time, trn_acc, test_acc, best_epoch = time.time(), 0, 0, 0
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
