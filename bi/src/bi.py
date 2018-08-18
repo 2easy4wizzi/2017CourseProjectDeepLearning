@@ -14,9 +14,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 300
+LSTM_HIDDEN_UNITS = 150
 LSTM_TYPE = 'GRU'
-EPOCHS = 10
+EPOCHS = 20
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -203,13 +203,17 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
+    gru_forward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_forward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2, gru_forward_cell3, gru_forward_cell4])
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
     multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
     gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
     gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
+    gru_backward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_backward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2, gru_backward_cell3, gru_backward_cell4])
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
     multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
@@ -313,6 +317,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
         batches_num_train = int(math.ceil(len(l_train_y) / BATCH_SIZE))
         batches_num_dev = int(math.ceil(len(l_dev_y) / BATCH_SIZE))
         for i in range(EPOCHS):
+            epoch_start_time = time.time()  # measure epoch time
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
@@ -364,6 +369,10 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                             logging.info('    Saved model {} at epoch {}'.format(save_path, best_at_epoch))
                         msg = '    Best accuracy {:.4f}% at epoch {}/{} ({}/{})'
                         logging.info(msg.format(best_accuracy * 100, best_at_epoch, EPOCHS, total_correct, total_seen))
+            epoch_end = time.time() - epoch_start_time
+            hours, rem = divmod(epoch_end, 3600)
+            minutes, seconds = divmod(rem, 60)
+            print("Epoch run time: {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
             print("###################################################################################################")
         train_msg = '***Training is complete. Best accuracy {:.4f}% at epoch {}/{}'
         print(train_msg.format(best_accuracy * 100, best_at_epoch, EPOCHS))
