@@ -449,8 +449,8 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
     print("     mdl_path {}".format(mdl_path))
 
     print("results:")
-    print("     best training acc at epoch={} is {}".format(best_epoch, l_trn_acc * 100))
-    print("     testing acc {}".format(l_test_acc * 100))
+    print("     best training acc at epoch={} is {:.4f}".format(best_epoch, l_trn_acc * 100))
+    print("     testing acc {:.4f}".format(l_test_acc * 100))
 
     hours, rem = divmod(duration, 3600)
     minutes, seconds = divmod(rem, 60)
