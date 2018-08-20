@@ -14,7 +14,7 @@ V multi cell
 V enlarge data file
 V initializer=tf.contrib.layers.xavier_initializer()
 
-get different loss funcs
+V get different loss funcs
 try lr again
 
 
