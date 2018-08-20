@@ -1,6 +1,6 @@
 V dynamic learning rate 
 	start with 0.01 if acc doesn't improve 5 epochs learn/=2; if learn < (bound = 0.0001): learn = bound
-different opt
+V different opt
 	adam
 	rmsprop
 	adagrad
@@ -11,8 +11,11 @@ V bach size
 	tried 100, 200, 300
 V change emb file
 V multi cell
-X enlarge data file
+V enlarge data file
 V initializer=tf.contrib.layers.xavier_initializer()
+
+get different loss funcs
+try lr again
 
 
 
