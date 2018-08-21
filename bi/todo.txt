@@ -18,7 +18,9 @@ V get different loss funcs
 try lr again
 
 attention https://programtalk.com/python-examples/tensorflow.contrib.rnn.AttentionCellWrapper/
+bn
+drop out layer to each cell
+graph experiments
+
+bn outputs_as_value
 truncated back propofation through time https://www.tensorflow.org/tutorials/sequences/recurrent#truncated_backpropagation
-
-
-

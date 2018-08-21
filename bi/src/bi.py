@@ -228,8 +228,8 @@ def get_bidirectional_rnn_model(l_emb_mat):
     # weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
     weight = tf.get_variable(name='weight', shape=[2 * LSTM_HIDDEN_UNITS, num_classes], initializer=tf.contrib.layers.xavier_initializer())
     # bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
-    bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.contrib.layers.xavier_initializer())
-
+    # bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.contrib.layers.xavier_initializer())
+    bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.constant(0.1))
     outputs_as_value = tf.gather(outputs_as_vecs, int(outputs_as_vecs.get_shape()[0]) - 1)
     prediction = (tf.matmul(outputs_as_value, weight) + bias)
 
