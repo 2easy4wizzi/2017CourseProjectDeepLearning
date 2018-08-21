@@ -33,8 +33,6 @@ DATA_FILE = '5way_tur_ger_rus_fra_usa100K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXI
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
-UNIT_TESTING = False  # will print test results
-
 MODEL_PATH = '../model_temp/model.ckpt'  # Should set it to model path if TRAIN = False
 USE_TMP_FOLDER = True
 TRAIN = True
@@ -107,11 +105,6 @@ def load_data(data_full_path, shuffle=False):
     print('Our {} labels to index dictionary ={}'.format(len(l_unique_labels_to_ind), l_unique_labels_to_ind))
     print('Our {} index to labels dictionary ={}'.format(len(l_unique_ind_to_labels), l_unique_ind_to_labels))
 
-    if UNIT_TESTING:
-        print('\t\t\t\t\t{} LOAD_DATA({}): len(all_lines)==10K?'.format(len(all_lines) == 10000, DATA_FILE))
-        print('\t\t\t\t\t{} LOAD_DATA({}): all_lines[0] start with \'us i think if you\'?'.format(all_lines[0].startswith('us i think if you'), DATA_FILE))
-        print('\t\t\t\t\t{} LOAD_DATA({}): all_lines[-1] start with \'us if slovenia did nt\'?'.format(all_lines[-1].startswith('us if slovenia did nt'), DATA_FILE))  # 2 way us rus
-
     for i in range(len(labels_str)):
         labels_int.append(l_unique_labels_to_ind[labels_str[i]])
 
@@ -135,29 +128,9 @@ def load_data(data_full_path, shuffle=False):
     l_train_x = l_train_dev_x[:split_ind2]
     l_train_y = l_train_dev_y[:split_ind2]
 
-    if UNIT_TESTING:
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[0] which is line {} start with \'i\'?'.format(l_train_x[0][0] == 'i', DATA_FILE, 1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_train_y[0]] == 'us', DATA_FILE, 1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[-1] which is line {} start with \'not\'?'.format(l_train_x[-1][0] == 'not', DATA_FILE, split_ind2))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_y[-1] which is line {} is us?'.format(l_unique_ind_to_labels[l_train_y[-1]] == 'us', DATA_FILE, split_ind2))
-
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[0] which is line {} start with \'the\'?'.format(l_dev_x[0][0] == 'the', DATA_FILE, split_ind2+1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_dev_y[0]] == 'us', DATA_FILE, split_ind2+1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[-1] which is line {} start with \'the\'?'.format(l_dev_x[-1][0] == 'the', DATA_FILE, len(l_train_dev_y)))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_y[-1] which is line {} is russia?'.format(l_unique_ind_to_labels[l_dev_y[-1]] == 'russia', DATA_FILE, len(l_train_dev_y)))
-
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[0] which is line {} start with \'but\'?'.format(l_test_x[0][0] == 'but', DATA_FILE, split_ind+1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_y[0] which is line {} is us?'.format(l_unique_ind_to_labels[l_test_y[0]] == 'us', DATA_FILE, split_ind+1))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[-1] which is line {} start with \'if\'?'.format(l_test_x[-1][0] == 'if', DATA_FILE, len(all_lines)))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_y[-1] which is line {} is us?'.format(l_unique_ind_to_labels[l_test_y[-1]] == 'us', DATA_FILE, len(all_lines)))
-
     l_train_x = convert_data_to_word_indices(l_train_x)
     l_dev_x = convert_data_to_word_indices(l_dev_x)
     l_test_x = convert_data_to_word_indices(l_test_x)
-    if UNIT_TESTING:
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_train_x[0].item(0, 0) (which is \'i\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_train_x[0].item(0, 0) == gl_word_to_emb_mat_ind['i'], DATA_FILE))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_dev_x[0].item(0, 0) (which is \'the\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_dev_x[0].item(0, 0) == gl_word_to_emb_mat_ind['the'], DATA_FILE))
-        print('\t\t\t\t\t{} LOAD_DATA({}): l_test_x[0].item(0, 0) (which is \'but\') == 41(index in gl_word_to_emb_mat_ind)?'.format(l_test_x[0].item(0, 0) == gl_word_to_emb_mat_ind['but'], DATA_FILE))
 
     print('x_train: {}, x_dev: {}, x_test: {}'.format(len(l_train_x), len(l_dev_x), len(l_test_x)))
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(l_train_y), len(l_dev_y), len(l_test_y)))
@@ -181,12 +154,6 @@ def load_emb(emb_full_path):
     # adding one more entry for all words that doesn't exist in the emb_full_path
     l_emb_mat.append(np.zeros(EMB_DIM, dtype='float32'))
     print('Embedding tokens size={}'.format(len(l_emb_mat)))
-    if UNIT_TESTING:
-        print('\t\t\t\t\t{} EMB: len(l_word_to_emb_mat_ind)==400K?'.format(len(l_word_to_emb_mat_ind) == 400000))
-        print('\t\t\t\t\t{} EMB: l_word_to_emb_mat_ind[\'people\']==69?'.format(l_word_to_emb_mat_ind['people'] == 69))
-        print('\t\t\t\t\t{} EMB: len(l_emb_mat)==400001?'.format(l_word_to_emb_mat_ind['people'] == 69))
-        a = str(l_emb_mat[l_word_to_emb_mat_ind['people']][0])
-        print('\t\t\t\t\t{} EMB: l_emb_mat[l_word_to_emb_mat_ind[\'people\']] start with 0.95281?'.format(a == '0.95281'))
     return l_word_to_emb_mat_ind, np.matrix(l_emb_mat, dtype='float32')
 
 
@@ -201,24 +168,32 @@ def get_bidirectional_rnn_model(l_emb_mat):
     print("input_labels_batch shape: {}".format(input_labels_batch.get_shape()))
 
     data = tf.nn.embedding_lookup(l_emb_mat, input_data_x_batch)
-
+    print("data(after embedding) shape: {}".format(data.get_shape()))
+    # forward
     gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell5 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2, gru_forward_cell3, gru_forward_cell4, gru_forward_cell5])
+    gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
+    gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    print("gru_forward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
+
+    multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
+    print("multi_forward_cell: {} cells".format(2))
+    # multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+
+    # backward
     gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell3 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell4 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell5 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2, gru_backward_cell3, gru_backward_cell4, gru_backward_cell5])
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
-    multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+
+    gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
+    gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    print("gru_backward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
+
+    multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
+    print("multi_backward_cell: {} cells".format(2))
+    # multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
 
@@ -227,12 +202,11 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     # weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
     weight = tf.get_variable(name='weight', shape=[2 * LSTM_HIDDEN_UNITS, num_classes], initializer=tf.contrib.layers.xavier_initializer())
-    # bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
+    bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
     # bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.contrib.layers.xavier_initializer())
-    bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.constant(0.1))
+
     outputs_as_value = tf.gather(outputs_as_vecs, int(outputs_as_vecs.get_shape()[0]) - 1)
     prediction = (tf.matmul(outputs_as_value, weight) + bias)
-
     l_correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(input_labels_batch, 1))
     l_num_correct = tf.reduce_sum(tf.cast(l_correct_pred, tf.float32))
 
@@ -241,7 +215,6 @@ def get_bidirectional_rnn_model(l_emb_mat):
     l_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=input_labels_batch))
 
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
-    # l_loss = tf.Print(l_loss, [l_loss, outputs_as_vecs, outputs_as_value])
     l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
 
     grads_and_vars = l_optimizer.compute_gradients(l_loss)
