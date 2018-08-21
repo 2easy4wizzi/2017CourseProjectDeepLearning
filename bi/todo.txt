@@ -17,5 +17,8 @@ V initializer=tf.contrib.layers.xavier_initializer()
 V get different loss funcs
 try lr again
 
+attention https://programtalk.com/python-examples/tensorflow.contrib.rnn.AttentionCellWrapper/
+truncated back propofation through time https://www.tensorflow.org/tutorials/sequences/recurrent#truncated_backpropagation
+
 
 
