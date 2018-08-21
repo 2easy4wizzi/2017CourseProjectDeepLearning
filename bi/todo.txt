@@ -15,18 +15,21 @@ V enlarge data file
 V initializer=tf.contrib.layers.xavier_initializer()
 
 V get different loss funcs
-try lr again
-learning_rate = tf.train.exponential_decay(
-        1e-3,                      # Base learning rate.
-        global_step * BATCH_SIZE,  # Current index into the dataset.
-        train_size,                # Decay step.
-        0.95,                      # Decay rate.
-        staircase=True)
+V try lr again
+	learning_rate = tf.train.exponential_decay(
+			1e-3,                      # Base learning rate.
+			global_step * BATCH_SIZE,  # Current index into the dataset.
+			train_size,                # Decay step.
+			0.95,                      # Decay rate.
+			staircase=True)
 
-attention https://programtalk.com/python-examples/tensorflow.contrib.rnn.AttentionCellWrapper/
-bn
-drop out layer to each cell
+V attention https://programtalk.com/python-examples/tensorflow.contrib.rnn.AttentionCellWrapper/
+V drop out layer to each cell
+
+bn real article
 graph experiments
 
+
+MAYBE: 
 bn outputs_as_value
 truncated back propofation through time https://www.tensorflow.org/tutorials/sequences/recurrent#truncated_backpropagation
