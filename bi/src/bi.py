@@ -14,7 +14,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 100
+LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
 EPOCHS = 10
 BATCH_SIZE = 200
@@ -173,34 +173,34 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     # forward
     gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_forward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell, attn_length=10)
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_forward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell2, attn_length=10)
     print("gru_forward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
-    multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=25)
+    # multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=25)
     print("multi_forward_cell: {} cells".format(2))
 
     # backward
     gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_backward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell, attn_length=10)
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    # gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_backward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell2, attn_length=10)
     print("gru_backward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
-    multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=25)
+    # multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=25)
     print("multi_backward_cell: {} cells".format(2))
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
@@ -224,16 +224,15 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    starter_learning_rate = 0.01
-    learning_rate = tf.train.exponential_decay(learning_rate=starter_learning_rate, global_step=l_global_step*BATCH_SIZE, decay_steps=2000, decay_rate=0.96, staircase=True)
-    # learning_step = (tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step))
+    # for constant lr - keep line learning_rate = 0.001
 
-    l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step)
-    # l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(l_loss, global_step=l_global_step)
+    learning_rate = 0.001
+    # # for dynamic lr uncomment the next line
+    # learning_rate = tf.train.exponential_decay(learning_rate=learning_rate, global_step=l_global_step, decay_steps=2000, decay_rate=0.96, staircase=True)
 
-    # grads_and_vars = l_optimizer.compute_gradients(l_loss)
-    # l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
+    l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    l_train_op = l_optimizer.minimize(l_loss, global_step=l_global_step)
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, l_optimizer
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
@@ -311,6 +310,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
         for i in range(EPOCHS):
             epoch_start_time = time.time()  # measure epoch time
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
+            # print('epoch Learning rate:{}'.format(opt._lr.eval()))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
                 if len(batch_y_trn) != BATCH_SIZE:
@@ -324,7 +324,6 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
 
                 # check on dev data 2 times per epoch
                 if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
-                    print('Learning rate: %f' % (sess.run(train_op._lr)))
 
                     total_correct, total_seen, dev_acc = 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
@@ -473,7 +472,7 @@ if __name__ == '__main__':
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
-    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
+    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred, opt = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
         MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)
