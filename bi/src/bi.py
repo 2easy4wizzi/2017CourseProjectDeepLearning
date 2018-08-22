@@ -184,6 +184,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
     multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=25)
     print("multi_forward_cell: {} cells".format(2))
 
     # backward
@@ -199,6 +200,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
     multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=25)
     print("multi_backward_cell: {} cells".format(2))
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
@@ -222,16 +224,16 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    # starter_learning_rate = 0.01
-    # learning_rate = tf.train.exponential_decay(learning_rate=starter_learning_rate, global_step=l_global_step*BATCH_SIZE, decay_steps=2000, decay_rate=0.96, staircase=True)
-    # # learning_step = (tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step))
-    #
-    # l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step)
-    l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(l_loss, global_step=l_global_step)
+    starter_learning_rate = 0.01
+    learning_rate = tf.train.exponential_decay(learning_rate=starter_learning_rate, global_step=l_global_step*BATCH_SIZE, decay_steps=2000, decay_rate=0.96, staircase=True)
+    # learning_step = (tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step))
+
+    l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step)
+    # l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(l_loss, global_step=l_global_step)
 
     # grads_and_vars = l_optimizer.compute_gradients(l_loss)
     # l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, learning_rate
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
@@ -320,6 +322,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
 
                 # check on dev data 2 times per epoch
                 if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
+                    print('lr={}'.format(lr))
                     total_correct, total_seen, dev_acc = 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):
@@ -467,7 +470,7 @@ if __name__ == '__main__':
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
-    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
+    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred, lr = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
         MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)
