@@ -233,7 +233,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     # grads_and_vars = l_optimizer.compute_gradients(l_loss)
     # l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, learning_rate
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
@@ -306,6 +306,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
         best_accuracy, best_at_epoch = 0, 0
         batches_num_train = int(math.ceil(len(l_train_y) / BATCH_SIZE))
         batches_num_dev = int(math.ceil(len(l_dev_y) / BATCH_SIZE))
+        print('batches_num_train{}'.format(batches_num_train))
+        print('batches_num_dev{}'.format(batches_num_dev))
         for i in range(EPOCHS):
             epoch_start_time = time.time()  # measure epoch time
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
@@ -322,7 +324,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
 
                 # check on dev data 2 times per epoch
                 if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
-                    print('lr={}'.format(lr))
+                    print('Learning rate: %f' % (sess.run(train_op._lr)))
+
                     total_correct, total_seen, dev_acc = 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):
@@ -470,7 +473,7 @@ if __name__ == '__main__':
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
-    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred, lr = get_bidirectional_rnn_model(emb_mat)
+    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
         MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)
