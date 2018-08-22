@@ -173,32 +173,32 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     # forward
     gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell, attn_length=10)
-    gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell, attn_length=10)
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell2, attn_length=10)
-    gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell2, attn_length=10)
     print("gru_forward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
-    # multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     print("multi_forward_cell: {} cells".format(2))
 
     # backward
     gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell, attn_length=10)
-    gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell, attn_length=10)
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell2, attn_length=10)
-    gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell2, attn_length=10)
     print("gru_backward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
-    # multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     print("multi_backward_cell: {} cells".format(2))
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
@@ -222,15 +222,16 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    # starter_learning_rate = 0.1
-    # learning_rate = tf.train.exponential_decay(starter_learning_rate, l_global_step, 100000, 0.96, staircase=True)
-    # learning_step = (tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step))
+    # starter_learning_rate = 0.01
+    # learning_rate = tf.train.exponential_decay(learning_rate=starter_learning_rate, global_step=l_global_step*BATCH_SIZE, decay_steps=2000, decay_rate=0.96, staircase=True)
+    # # learning_step = (tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step))
+    #
+    # l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(l_loss, global_step=l_global_step)
+    l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(l_loss, global_step=l_global_step)
 
-    l_optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-08)
-
-    grads_and_vars = l_optimizer.compute_gradients(l_loss)
-    l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
+    # grads_and_vars = l_optimizer.compute_gradients(l_loss)
+    # l_train_op = l_optimizer.apply_gradients(grads_and_vars, global_step=l_global_step)
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_optimizer, l_global_step, l_loss, acc, l_num_correct, l_correct_pred
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
