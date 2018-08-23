@@ -14,7 +14,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 300
+LSTM_HIDDEN_UNITS = 100
 LSTM_TYPE = 'GRU'
 EPOCHS = 10
 BATCH_SIZE = 200
@@ -42,9 +42,9 @@ TEST = True
 # DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-# EPOCHS = 1
+# EPOCHS = 2
 # BATCH_SIZE = 10
-# TRAIN = False
+# TRAIN = True
 # TEST = False
 # SHOULD_SAVE = False
 
@@ -205,7 +205,13 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
 
+    # why we concat?
+    # in the documentation: "It returns a tuple instead of a single concatenated `Tensor`, unlike in the
+    # `bidirectional_rnn`.If the concatenated one is preferred, the forward and backward outputs can be concatenated
+    # as `tf.concat(outputs, 2)`".
     outputs_as_vecs = tf.concat(outputs_as_vecs, 2)
+
+    # output will be a `Tensor` shaped: `[batch_size, max_time, cell_fw.output_size]`
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
 
     # weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
@@ -305,18 +311,22 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
         best_accuracy, best_at_epoch = 0, 0
         batches_num_train = int(math.ceil(len(l_train_y) / BATCH_SIZE))
         batches_num_dev = int(math.ceil(len(l_dev_y) / BATCH_SIZE))
-        print('batches_num_train{}'.format(batches_num_train))
-        print('batches_num_dev{}'.format(batches_num_dev))
+        print('batches_num_train: {}'.format(batches_num_train))
+        print('batches_num_dev: {}'.format(batches_num_dev))
         for i in range(EPOCHS):
             epoch_start_time = time.time()  # measure epoch time
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
+            train_loss, iters, train_total_acc = 0, 0, 0
             # print('epoch Learning rate:{}'.format(opt._lr.eval()))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
                 if len(batch_y_trn) != BATCH_SIZE:
                     print('len(batch_y_trn) != BATCH_SIZE - {}'.format(len(batch_y_trn)))
                     continue
-                _, _ = train_step_func(sess, batch_x_trn, batch_y_trn)
+                batch_train_loss, batch_acc_trn = train_step_func(sess, batch_x_trn, batch_y_trn)
+                train_total_acc += batch_acc_trn
+                train_loss += batch_train_loss
+                iters += 1
                 # #if you like to print the train data performance, replace the above line with the next 3 lines
                 # batch_loss_trn, batch_acc_trn = train_step_func(sess, batch_x_trn, batch_y_trn)
                 # msg = "    TRAIN: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
@@ -324,15 +334,18 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
 
                 # check on dev data 2 times per epoch
                 if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
-
-                    total_correct, total_seen, dev_acc = 0, 0, 0
+                    dev_loss, iters_dev = 0, 0
+                    total_correct, total_seen, dev_acc, dev_total_acc = 0, 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):
                         batch_x_dev, batch_y_dev = get_batch_sequential(l_dev_x, l_dev_y, dev_step, BATCH_SIZE)
                         if len(batch_y_dev) != BATCH_SIZE:
                             print('len(batch_y_dev) != BATCH_SIZE - {}'.format(len(batch_y_dev)))
                             continue
-                        _, _, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
+                        batch_dev_loss, dev_batch_acc, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
+                        dev_loss += batch_dev_loss
+                        dev_total_acc += dev_batch_acc
+                        iters_dev += 1
                         # #if you like to print the dev data performance, replace the above line with the next 3 lines
                         # batch_loss_dev, batch_acc_dev, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
                         # msg = "        DEV: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
@@ -354,6 +367,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     dev_acc = float(total_correct)/float(total_seen)
                     msg = "    DEV accuracy on epoch {}/{} in train step {} = {:.4f}%"
                     print(msg.format(i + 1, EPOCHS, train_step, dev_acc * 100))
+                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(train_loss / iters_dev, 100*(dev_total_acc/iters_dev)))
                     print_stats(stat_dict_step_total, stat_dict_step_correct)
                     if dev_acc > best_accuracy:
                         best_accuracy, best_at_epoch = dev_acc, i + 1
@@ -366,6 +380,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             hours, rem = divmod(epoch_end, 3600)
             minutes, seconds = divmod(rem, 60)
             print("Epoch run time: {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
+            print('Train average loss for this epoch is {} and average acc is {}'.format(train_loss/iters, 100*(train_total_acc/iters)))
             print("###################################################################################################")
         train_msg = '***Training is complete. Best accuracy {:.4f}% at epoch {}/{}'
         print(train_msg.format(best_accuracy * 100, best_at_epoch, EPOCHS))
@@ -471,7 +486,7 @@ if __name__ == '__main__':
     total_start_time, trn_acc, test_acc, best_epoch = time.time(), 0, 0, 0
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
-    train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH)
+    train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH, True)
     input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred, opt = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
