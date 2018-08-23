@@ -16,7 +16,7 @@ MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 100
 LSTM_TYPE = 'GRU'
-EPOCHS = 10
+EPOCHS = 25
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -42,7 +42,7 @@ TEST = True
 # DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-# EPOCHS = 2
+# EPOCHS = 25
 # BATCH_SIZE = 10
 # TRAIN = True
 # TEST = False
@@ -159,15 +159,19 @@ def load_emb(emb_full_path):
 
 
 # bidirectional model creation
+# below there is a link we used to build out model
+# https://github.com/adeshpande3/Tensorflow-Programs-and-Tutorials/blob/master/Question%20Pair%20Classification%20with%20RNNs.ipynb
 def get_bidirectional_rnn_model(l_emb_mat):
     tf.reset_default_graph()
     num_classes = len(gl_label_to_ind)
     input_data_x_batch = tf.placeholder(tf.int32, [BATCH_SIZE, MAXIMUM_ROW_LENGTH])
     input_labels_batch = tf.placeholder(tf.float32, [BATCH_SIZE, num_classes])
     keep_prob_pl = tf.placeholder(tf.float32)
+    learning_rate = tf.placeholder(tf.float32)
     print("input_data_x_batch shape: {}".format(input_data_x_batch.get_shape()))
     print("input_labels_batch shape: {}".format(input_labels_batch.get_shape()))
 
+    data = tf.Variable(tf.zeros([BATCH_SIZE, MAXIMUM_ROW_LENGTH, EMB_DIM]), dtype=tf.float32)
     data = tf.nn.embedding_lookup(l_emb_mat, input_data_x_batch)
     print("data(after embedding) shape: {}".format(data.get_shape()))
 
@@ -215,7 +219,9 @@ def get_bidirectional_rnn_model(l_emb_mat):
     outputs_as_vecs = tf.transpose(outputs_as_vecs, [1, 0, 2])
 
     # weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes]), name='weight')
-    weight = tf.get_variable(name='weight', shape=[2 * LSTM_HIDDEN_UNITS, num_classes], initializer=contrib.layers.xavier_initializer())
+    weight = tf.Variable(tf.truncated_normal([2 * LSTM_HIDDEN_UNITS, num_classes], name='weight'))
+    regularization_cost = tf.reduce_sum(tf.nn.l2_loss(weight))
+    # weight = tf.get_variable(name='weight', shape=[2 * LSTM_HIDDEN_UNITS, num_classes], initializer=contrib.layers.xavier_initializer())
     bias = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='bias')
     # bias = tf.get_variable(name='bias', shape=[num_classes], initializer=tf.contrib.layers.xavier_initializer())
 
@@ -227,18 +233,18 @@ def get_bidirectional_rnn_model(l_emb_mat):
     acc = tf.reduce_mean(tf.cast(l_correct_pred, tf.float32))
 
     l_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=input_labels_batch))
-
+    l_loss += regularization_cost
     l_global_step = tf.Variable(0, name='global_step', trainable=False)
 
     # for constant lr - keep line learning_rate = 0.001
 
-    learning_rate = 0.001
+    # learning_rate = 0.001
     # # for dynamic lr uncomment the next line
     # learning_rate = tf.train.exponential_decay(learning_rate=learning_rate, global_step=l_global_step, decay_steps=2000, decay_rate=0.96, staircase=True)
 
     l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     l_train_op = l_optimizer.minimize(l_loss, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, l_optimizer
+    return input_data_x_batch, input_labels_batch, keep_prob_pl,learning_rate, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, l_optimizer
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
@@ -259,7 +265,8 @@ def get_batch_sequential(data_x, data_y, batch_num, batch_size):
 def train_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
-                 keep_prob: KEEP_PROB
+                 keep_prob: KEEP_PROB,
+                 lr: 0.001
                  }
     _, gs, batch_loss_trn, batch_acc_trn = sess.run([train_op, global_step, loss, accuracy], feed_dict)
     return batch_loss_trn, batch_acc_trn
@@ -269,7 +276,8 @@ def train_step_func(sess, x_batch, y_batch):
 def dev_step_func(sess, x_batch, y_batch):
     feed_dict = {input_data: x_batch,
                  input_labels: y_batch,
-                 keep_prob: 1.0
+                 keep_prob: 1.0,
+                 lr: 0.001
                  }
     batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions = sess.run([loss, accuracy, num_correct, correct_pred], feed_dict)
     return batch_loss_dev, batch_acc_dev, batch_num_correct, batch_predictions
@@ -367,7 +375,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     dev_acc = float(total_correct)/float(total_seen)
                     msg = "    DEV accuracy on epoch {}/{} in train step {} = {:.4f}%"
                     print(msg.format(i + 1, EPOCHS, train_step, dev_acc * 100))
-                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(train_loss / iters_dev, 100*(dev_total_acc/iters_dev)))
+                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(dev_loss / iters_dev, 100*(dev_total_acc/iters_dev)))
                     print_stats(stat_dict_step_total, stat_dict_step_correct)
                     if dev_acc > best_accuracy:
                         best_accuracy, best_at_epoch = dev_acc, i + 1
@@ -487,7 +495,7 @@ if __name__ == '__main__':
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH, True)
-    input_data, input_labels, keep_prob, train_op, global_step, loss, accuracy, num_correct, correct_pred, opt = get_bidirectional_rnn_model(emb_mat)
+    input_data, input_labels, keep_prob, lr, train_op, global_step, loss, accuracy, num_correct, correct_pred, opt = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
         MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)

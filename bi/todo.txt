@@ -26,10 +26,7 @@ V try lr again
 V attention https://programtalk.com/python-examples/tensorflow.contrib.rnn.AttentionCellWrapper/
 V drop out layer to each cell
 
-bn real article
-graph experiments
+dropout to 0.7
+lr - find where and decrease when overfitting starts
 
 
-MAYBE: 
-bn outputs_as_value
-truncated back propofation through time https://www.tensorflow.org/tutorials/sequences/recurrent#truncated_backpropagation
