@@ -9,7 +9,7 @@ import logging
 from collections import defaultdict
 import io
 # import sys
-import tensorflow.contrib as contrib
+# import tensorflow.contrib as contrib
 import matplotlib.pyplot as plt
 # # next 2 lines will work only on jupyter notebook
 from IPython import get_ipython
@@ -19,9 +19,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 75
+LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
-EPOCHS = 10
+EPOCHS = 15
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -47,7 +47,7 @@ TEST = True
 # DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-# EPOCHS = 10
+# EPOCHS = 3
 # BATCH_SIZE = 10
 # TRAIN = True
 # TEST = True
@@ -193,7 +193,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
     multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=50)
+    # multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=50)
     print("multi_forward_cell: {} cells".format(2))
 
     # backward
@@ -209,7 +209,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
     multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=50)
+    # multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=50)
     print("multi_backward_cell: {} cells".format(2))
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
@@ -382,7 +382,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     print(msg.format(i + 1, EPOCHS, train_step, dev_acc * 100))
                     print('    Dev loss average for this epoch is {:.4f} and average acc is {:.4f}'.format(dev_1eval_loss / dev_iters, 100*(dev_total_acc/dev_iters)))
                     if train_step == int(batches_num_train/2):
-                        dev_loss_over_epochs.append((dev_1eval_loss / dev_iters))
+                        if i != 0:  # loss in first epoch in un-proportional and ruins the scale of the graph
+                            dev_loss_over_epochs.append((dev_1eval_loss / dev_iters))
                         dev_acc_over_epochs.append((dev_total_acc / dev_iters) * 100)
                     print_stats(stat_dict_step_total, stat_dict_step_correct)
                     if dev_acc > best_accuracy:
@@ -397,7 +398,8 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             minutes, seconds = divmod(rem, 60)
             print("Epoch run time: {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
             print('Train average loss for this epoch is {:.4f} and average acc is {:.4f}'.format(trn_1epoch_loss/trn_iters, 100*(trn_1epoch_acc/trn_iters)))
-            trn_loss_over_epochs.append((trn_1epoch_loss/trn_iters))
+            if i != 0:  # loss in first epoch in un-proportional and ruins the scale of the graph
+                trn_loss_over_epochs.append((trn_1epoch_loss/trn_iters))
             trn_acc_over_epochs.append((trn_1epoch_acc/trn_iters) * 100)
             print("###################################################################################################")
         train_msg = '***Training is complete. Best accuracy {:.4f}% at epoch {}/{}'
@@ -479,7 +481,7 @@ def args_print(stage, mdl_path, l_data_size, l_trn_acc, l_test_acc, l_lines_per_
 
     print("results:")
     print("     best training acc at epoch={} is {:.4f}".format(l_best_epoch, l_trn_acc * 100))
-    print("     testing acc {:.4f}".format(l_test_acc * 100))
+    print("     testing acc {:.4f}".format(l_test_acc))
 
     hours, rem = divmod(duration, 3600)
     minutes, seconds = divmod(rem, 60)
