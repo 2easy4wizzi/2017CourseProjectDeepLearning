@@ -8,15 +8,16 @@ import tensorflow as tf
 import logging
 from collections import defaultdict
 import io
+import matplotlib.pyplot as plt
 import sys
 import tensorflow.contrib as contrib
 logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 100
+LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
-EPOCHS = 25
+EPOCHS = 10
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -42,11 +43,11 @@ TEST = True
 # DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-# EPOCHS = 25
+# EPOCHS = 3
 # BATCH_SIZE = 10
 # TRAIN = True
-# TEST = False
-# SHOULD_SAVE = False
+# TEST = True
+# SHOULD_SAVE = True
 
 
 def clean_str(s):  # removing all chars but letters, numbers, spaces, commas and dots
@@ -171,40 +172,40 @@ def get_bidirectional_rnn_model(l_emb_mat):
     print("input_data_x_batch shape: {}".format(input_data_x_batch.get_shape()))
     print("input_labels_batch shape: {}".format(input_labels_batch.get_shape()))
 
-    data = tf.Variable(tf.zeros([BATCH_SIZE, MAXIMUM_ROW_LENGTH, EMB_DIM]), dtype=tf.float32)
+    # data = tf.Variable(tf.zeros([BATCH_SIZE, MAXIMUM_ROW_LENGTH, EMB_DIM]), dtype=tf.float32)
     data = tf.nn.embedding_lookup(l_emb_mat, input_data_x_batch)
     print("data(after embedding) shape: {}".format(data.get_shape()))
 
     # forward
     gru_forward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_forward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell, attn_length=10)
     print("gru_forward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_forward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_forward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_forward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_forward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_forward_cell2, attn_length=10)
     print("gru_forward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_forward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_forward_cell, gru_forward_cell2])
-    # multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    # multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=25)
+    multi_forward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_forward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_forward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_forward_cell, attn_length=50)
     print("multi_forward_cell: {} cells".format(2))
 
     # backward
     gru_backward_cell = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_backward_cell = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell, attn_length=10)
     print("gru_backward_cell units: {}".format(LSTM_HIDDEN_UNITS))
 
     gru_backward_cell2 = tf.nn.rnn_cell.GRUCell(num_units=LSTM_HIDDEN_UNITS)
-    gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    # gru_backward_cell2 = tf.nn.rnn_cell.DropoutWrapper(cell=gru_backward_cell2, output_keep_prob=keep_prob_pl, dtype=tf.float32)
     # gru_backward_cell2 = contrib.rnn.AttentionCellWrapper(cell=gru_backward_cell2, attn_length=10)
     print("gru_backward_cell2 units: {}".format(LSTM_HIDDEN_UNITS))
 
     multi_backward_cell = tf.nn.rnn_cell.MultiRNNCell([gru_backward_cell, gru_backward_cell2])
-    # multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
-    # multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=25)
+    multi_backward_cell = tf.nn.rnn_cell.DropoutWrapper(cell=multi_backward_cell, output_keep_prob=keep_prob_pl, dtype=tf.float32)
+    multi_backward_cell = contrib.rnn.AttentionCellWrapper(cell=multi_backward_cell, attn_length=50)
     print("multi_backward_cell: {} cells".format(2))
 
     outputs_as_vecs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=multi_forward_cell, cell_bw=multi_backward_cell, inputs=data, dtype=tf.float32)
@@ -317,14 +318,14 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
         saver = tf.train.Saver()
         sess.run(tf.global_variables_initializer())
         best_accuracy, best_at_epoch = 0, 0
-        batches_num_train = int(math.ceil(len(l_train_y) / BATCH_SIZE))
-        batches_num_dev = int(math.ceil(len(l_dev_y) / BATCH_SIZE))
+        batches_num_train, batches_num_dev = int(math.ceil(len(l_train_y) / BATCH_SIZE)), int(math.ceil(len(l_dev_y) / BATCH_SIZE))
+        trn_loss_over_epochs, trn_acc_over_epochs, dev_loss_over_epochs, dev_acc_over_epochs = [], [], [], []
         print('batches_num_train: {}'.format(batches_num_train))
         print('batches_num_dev: {}'.format(batches_num_dev))
         for i in range(EPOCHS):
             epoch_start_time = time.time()  # measure epoch time
             print("Epoch: {}/{} ---- best so far on epoch {}: acc={:.4f}%".format((i + 1), EPOCHS, best_at_epoch, best_accuracy*100))
-            train_loss, iters, train_total_acc = 0, 0, 0
+            trn_1epoch_loss, trn_iters, trn_1epoch_acc = 0, 0, 0
             # print('epoch Learning rate:{}'.format(opt._lr.eval()))
             for train_step in range(batches_num_train):
                 batch_x_trn, batch_y_trn = get_batch_sequential(l_train_x, l_train_y, train_step, BATCH_SIZE)
@@ -332,9 +333,9 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     print('len(batch_y_trn) != BATCH_SIZE - {}'.format(len(batch_y_trn)))
                     continue
                 batch_train_loss, batch_acc_trn = train_step_func(sess, batch_x_trn, batch_y_trn)
-                train_total_acc += batch_acc_trn
-                train_loss += batch_train_loss
-                iters += 1
+                trn_1epoch_acc += batch_acc_trn
+                trn_1epoch_loss += batch_train_loss
+                trn_iters += 1
                 # #if you like to print the train data performance, replace the above line with the next 3 lines
                 # batch_loss_trn, batch_acc_trn = train_step_func(sess, batch_x_trn, batch_y_trn)
                 # msg = "    TRAIN: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
@@ -342,7 +343,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
 
                 # check on dev data 2 times per epoch
                 if train_step == batches_num_train-3 or train_step == int(batches_num_train/2):
-                    dev_loss, iters_dev = 0, 0
+                    dev_1eval_loss, dev_iters = 0, 0
                     total_correct, total_seen, dev_acc, dev_total_acc = 0, 0, 0, 0
                     stat_dict_step_total, stat_dict_step_correct = defaultdict(int), defaultdict(int)
                     for dev_step in range(batches_num_dev):
@@ -351,9 +352,9 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                             print('len(batch_y_dev) != BATCH_SIZE - {}'.format(len(batch_y_dev)))
                             continue
                         batch_dev_loss, dev_batch_acc, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
-                        dev_loss += batch_dev_loss
+                        dev_1eval_loss += batch_dev_loss
                         dev_total_acc += dev_batch_acc
-                        iters_dev += 1
+                        dev_iters += 1
                         # #if you like to print the dev data performance, replace the above line with the next 3 lines
                         # batch_loss_dev, batch_acc_dev, batch_num_correct_dev, l_predictions = dev_step_func(sess, batch_x_dev, batch_y_dev)
                         # msg = "        DEV: STEP {}/{}: batch_acc = {:.4f}% , batch loss = {:.4f}"
@@ -375,7 +376,10 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     dev_acc = float(total_correct)/float(total_seen)
                     msg = "    DEV accuracy on epoch {}/{} in train step {} = {:.4f}%"
                     print(msg.format(i + 1, EPOCHS, train_step, dev_acc * 100))
-                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(dev_loss / iters_dev, 100*(dev_total_acc/iters_dev)))
+                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(dev_1eval_loss / dev_iters, 100*(dev_total_acc/dev_iters)))
+                    if train_step == int(batches_num_train/2):
+                        dev_loss_over_epochs.append((dev_1eval_loss / dev_iters))
+                        dev_acc_over_epochs.append((dev_total_acc / dev_iters) * 100)
                     print_stats(stat_dict_step_total, stat_dict_step_correct)
                     if dev_acc > best_accuracy:
                         best_accuracy, best_at_epoch = dev_acc, i + 1
@@ -388,11 +392,13 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             hours, rem = divmod(epoch_end, 3600)
             minutes, seconds = divmod(rem, 60)
             print("Epoch run time: {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
-            print('Train average loss for this epoch is {} and average acc is {}'.format(train_loss/iters, 100*(train_total_acc/iters)))
+            print('Train average loss for this epoch is {} and average acc is {}'.format(trn_1epoch_loss/trn_iters, 100*(trn_1epoch_acc/trn_iters)))
+            trn_loss_over_epochs.append((trn_1epoch_loss/trn_iters))
+            trn_acc_over_epochs.append((trn_1epoch_acc/trn_iters) * 100)
             print("###################################################################################################")
         train_msg = '***Training is complete. Best accuracy {:.4f}% at epoch {}/{}'
         print(train_msg.format(best_accuracy * 100, best_at_epoch, EPOCHS))
-    return model_full_path, best_accuracy, best_at_epoch
+    return model_full_path, best_accuracy, best_at_epoch, trn_loss_over_epochs, dev_loss_over_epochs, trn_acc_over_epochs, dev_acc_over_epochs
 
 
 # restores the model from saved folder and test it on test data
@@ -408,12 +414,16 @@ def test(l_model_full_path, l_test_x, l_test_y):
 
         total_correct, total_seen, l_test_acc = 0, 0, 0
         test_stat_dict_total, test_dict_correct = defaultdict(int), defaultdict(int)
-        batches_num_test = int(math.ceil(len(l_test_y) / BATCH_SIZE))
-        for test_step in range(batches_num_test):
+        test_total_loss, tests_iters, test_total_acc = 0, 0, 0
+        test_batches_num = int(math.ceil(len(l_test_y) / BATCH_SIZE))
+        for test_step in range(test_batches_num):
             x_test_batch, y_test_batch = get_batch_sequential(l_test_x, l_test_y, test_step, BATCH_SIZE)
             if len(y_test_batch) != BATCH_SIZE:
                 continue
-            _, _, batch_num_correct_test, l_predictions = dev_step_func(sess, x_test_batch, y_test_batch)
+            test_batch_loss, test_batch_acc, batch_num_correct_test, l_predictions = dev_step_func(sess, x_test_batch, y_test_batch)
+            test_total_loss += test_batch_loss
+            test_total_acc += test_batch_acc
+            tests_iters += 1
             for p in range(len(l_predictions)):  # calculating acc per class
                 true_val = int(np.argmax(y_test_batch[p]))
                 true_lbl = gl_ind_to_label[true_val]
@@ -424,11 +434,13 @@ def test(l_model_full_path, l_test_x, l_test_y):
             total_correct += int(batch_num_correct_test)  # sum correct predictions for acc
             total_seen += BATCH_SIZE
 
-        l_test_acc = float(total_correct) / float(total_seen)
+        l_test_acc = (float(total_correct) / float(total_seen)) * 100
+        test_total_loss, test_total_acc = test_total_loss/tests_iters, test_total_acc/tests_iters * 100
+        print('    Test loss average for this epoch is {} and average acc is {}'.format(test_total_loss, test_total_acc))
         acc_msg = '    Accuracy on test set - ({}/{}) -> accuracy: {:.4f}%'
-        print(acc_msg.format(total_correct, total_seen, l_test_acc*100))
+        print(acc_msg.format(total_correct, total_seen, l_test_acc))
         print_stats(test_stat_dict_total, test_dict_correct)  # Stats prints
-    return l_test_acc
+    return l_test_acc, test_total_loss, test_total_acc
 
 
 # print summary of the run
@@ -489,19 +501,35 @@ def _print_var_name_and_shape(should_print):
     return l_total_parameters
 
 
+def print_graph(title, xlabel, ylabel, func_a_data, func_b_data, func_c_data):
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.plot(func_a_data, 'r')
+    plt.plot(func_b_data, 'g')
+    plt.plot(func_c_data, 'b')
+    print(func_a_data)
+    print(func_b_data)
+    print(func_c_data)
+    plt.show()
+
+
 if __name__ == '__main__':
     print("Entering function __main__")
-    total_start_time, trn_acc, test_acc, best_epoch = time.time(), 0, 0, 0
+    total_start_time, trn_acc, tst_acc, best_epoch = time.time(), 0, 0, 0
+    grp_trn_loss, grp_dev_loss, grp_tst_loss, grp_trn_acc, grp_dev_acc, grp_tst_acc = [], [], [], [], [], []
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH, True)
     input_data, input_labels, keep_prob, lr, train_op, global_step, loss, accuracy, num_correct, correct_pred, opt = get_bidirectional_rnn_model(emb_mat)
     _print_var_name_and_shape(True)
     if TRAIN:
-        MODEL_PATH, trn_acc, best_epoch = train(train_x, train_y, dev_x, dev_y)
+        MODEL_PATH, trn_acc, best_epoch, grp_trn_loss, grp_dev_loss, grp_trn_acc, grp_dev_acc = train(train_x, train_y, dev_x, dev_y)
     if TEST:
-        test_acc = test(MODEL_PATH, test_x, test_y)
-    dur = time.time() - total_start_time
-    data_size = len(train_y) + len(dev_y) + len(test_y)
-    args_print('End summary', MODEL_PATH, data_size, trn_acc, test_acc, lines_per_class, best_epoch, int(dur))
+        tst_acc, grp_tst_loss, grp_tst_acc = test(MODEL_PATH, test_x, test_y)
+        grp_tst_loss, grp_tst_acc = [grp_tst_loss] * len(grp_trn_loss), [grp_tst_acc] * len(grp_trn_acc)
+    if TRAIN:
+        print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', grp_trn_loss, grp_dev_loss, grp_tst_loss)
+        print_graph('acc/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', grp_trn_acc, grp_dev_acc, grp_tst_acc)
+    args_print('End summary', MODEL_PATH, len(train_y) + (len(dev_y) + len(test_y)), trn_acc, tst_acc, lines_per_class, best_epoch, int(time.time() - total_start_time))
     print("Leaving function __main__")
