@@ -8,14 +8,18 @@ import tensorflow as tf
 import logging
 from collections import defaultdict
 import io
-import matplotlib.pyplot as plt
-import sys
+# import sys
 import tensorflow.contrib as contrib
+import matplotlib.pyplot as plt
+# # next 2 lines will work only on jupyter notebook
+from IPython import get_ipython
+if get_ipython() is not None:
+    get_ipython().run_line_magic('matplotlib', 'inline')
 logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-LSTM_HIDDEN_UNITS = 300
+LSTM_HIDDEN_UNITS = 75
 LSTM_TYPE = 'GRU'
 EPOCHS = 10
 BATCH_SIZE = 200
@@ -43,7 +47,7 @@ TEST = True
 # DATA_FILE = '2way_duplicated_data_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '2way_short{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
-# EPOCHS = 3
+# EPOCHS = 10
 # BATCH_SIZE = 10
 # TRAIN = True
 # TEST = True
@@ -245,7 +249,7 @@ def get_bidirectional_rnn_model(l_emb_mat):
 
     l_optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     l_train_op = l_optimizer.minimize(l_loss, global_step=l_global_step)
-    return input_data_x_batch, input_labels_batch, keep_prob_pl,learning_rate, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, l_optimizer
+    return input_data_x_batch, input_labels_batch, keep_prob_pl, learning_rate, l_train_op, l_global_step, l_loss, acc, l_num_correct, l_correct_pred, l_optimizer
 
 
 # e.g. 5 classes. takes the value 3 and returns [0 0 0 1 0]
@@ -376,7 +380,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
                     dev_acc = float(total_correct)/float(total_seen)
                     msg = "    DEV accuracy on epoch {}/{} in train step {} = {:.4f}%"
                     print(msg.format(i + 1, EPOCHS, train_step, dev_acc * 100))
-                    print('    Dev loss average for this epoch is {} and average acc is {}'.format(dev_1eval_loss / dev_iters, 100*(dev_total_acc/dev_iters)))
+                    print('    Dev loss average for this epoch is {:.4f} and average acc is {:.4f}'.format(dev_1eval_loss / dev_iters, 100*(dev_total_acc/dev_iters)))
                     if train_step == int(batches_num_train/2):
                         dev_loss_over_epochs.append((dev_1eval_loss / dev_iters))
                         dev_acc_over_epochs.append((dev_total_acc / dev_iters) * 100)
@@ -392,7 +396,7 @@ def train(l_train_x, l_train_y, l_dev_x, l_dev_y):
             hours, rem = divmod(epoch_end, 3600)
             minutes, seconds = divmod(rem, 60)
             print("Epoch run time: {:0>2}:{:0>2}:{:0>2}".format(int(hours), int(minutes), int(seconds)))
-            print('Train average loss for this epoch is {} and average acc is {}'.format(trn_1epoch_loss/trn_iters, 100*(trn_1epoch_acc/trn_iters)))
+            print('Train average loss for this epoch is {:.4f} and average acc is {:.4f}'.format(trn_1epoch_loss/trn_iters, 100*(trn_1epoch_acc/trn_iters)))
             trn_loss_over_epochs.append((trn_1epoch_loss/trn_iters))
             trn_acc_over_epochs.append((trn_1epoch_acc/trn_iters) * 100)
             print("###################################################################################################")
@@ -436,7 +440,7 @@ def test(l_model_full_path, l_test_x, l_test_y):
 
         l_test_acc = (float(total_correct) / float(total_seen)) * 100
         test_total_loss, test_total_acc = test_total_loss/tests_iters, test_total_acc/tests_iters * 100
-        print('    Test loss average for this epoch is {} and average acc is {}'.format(test_total_loss, test_total_acc))
+        print('    Test loss average for this epoch is {:.4f} and average acc is {:.4f}'.format(test_total_loss, test_total_acc))
         acc_msg = '    Accuracy on test set - ({}/{}) -> accuracy: {:.4f}%'
         print(acc_msg.format(total_correct, total_seen, l_test_acc))
         print_stats(test_stat_dict_total, test_dict_correct)  # Stats prints
