@@ -8,7 +8,7 @@ import tensorflow as tf
 import logging
 from collections import defaultdict
 import io
-# import sys
+import sys
 # import tensorflow.contrib as contrib
 import matplotlib.pyplot as plt
 # # next 2 lines will work only on jupyter notebook
@@ -21,7 +21,7 @@ MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
 LSTM_HIDDEN_UNITS = 300
 LSTM_TYPE = 'GRU'
-EPOCHS = 15
+EPOCHS = 30
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
 SHOULD_SAVE = True
@@ -524,6 +524,8 @@ if __name__ == '__main__':
     print("Entering function __main__")
     total_start_time, trn_acc, tst_acc, best_epoch = time.time(), 0, 0, 0
     grp_trn_loss, grp_dev_loss, grp_tst_loss, grp_trn_acc, grp_dev_acc, grp_tst_acc = [], [], [], [], [], []
+    # print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', a, b, c)
+    # sys.exit(0)
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
     train_x, train_y, dev_x, dev_y, test_x, test_y, gl_label_to_ind, gl_ind_to_label, lines_per_class = load_data(DATA_FILE_PATH, True)
@@ -536,6 +538,6 @@ if __name__ == '__main__':
         grp_tst_loss, grp_tst_acc = [grp_tst_loss] * len(grp_trn_loss), [grp_tst_acc] * len(grp_trn_acc)
     if TRAIN:
         print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', grp_trn_loss, grp_dev_loss, grp_tst_loss)
-        print_graph('acc/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', grp_trn_acc, grp_dev_acc, grp_tst_acc)
+        print_graph('acc/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'acc', grp_trn_acc, grp_dev_acc, grp_tst_acc)
     args_print('End summary', MODEL_PATH, len(train_y) + (len(dev_y) + len(test_y)), trn_acc, tst_acc, lines_per_class, best_epoch, int(time.time() - total_start_time))
     print("Leaving function __main__")
