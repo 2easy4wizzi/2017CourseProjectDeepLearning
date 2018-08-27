@@ -61,7 +61,7 @@ RUN_TEST_AFTER_TRAIN = True and SHOULD_SAVE  # if SHOULD_SAVE is false can't res
 PRINT_CLASSES_STATS_EACH_X_STEPS = 1  # prints dev stats each x steps
 PRINT_WORD_PARAGRAPH = True
 
-params = {'batch_size': 256,
+params = {'batch_size': 128,
           'dropout_keep_prob': 0.5,
           'embedding_dim': 300,
           'evaluate_every': 1000,
