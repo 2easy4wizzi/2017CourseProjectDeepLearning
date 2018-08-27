@@ -36,12 +36,12 @@ EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
 # DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 # DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '5way_tur_ger_rus_fra_usa100K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-DATA_FILE = '5way_rus_fra_usa_aus_ire_200K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+DATA_FILE = '5way_tur_ger_rus_fra_usa100K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
+# DATA_FILE = '5way_rus_fra_usa_aus_ire_200K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
-MODEL_PATH = '../model_temp/model.ckpt'  # Should set it to model path if TRAIN = False
+MODEL_PATH = '../model_1535375098/model.ckpt'  # Should set it to model path if TRAIN = False
 USE_TMP_FOLDER = False
 TRAIN = True
 TEST = True
@@ -530,7 +530,7 @@ if __name__ == '__main__':
     total_start_time, trn_acc, tst_acc, best_epoch = time.time(), 0, 0, 0
     grp_trn_loss, grp_dev_loss, grp_tst_loss, grp_trn_acc, grp_dev_acc, grp_tst_acc = [], [], [], [], [], []
     # print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', a, b, c)
-
+    #
     # sys.exit(0)
     global gl_word_to_emb_mat_ind, gl_label_to_ind, gl_ind_to_label
     gl_word_to_emb_mat_ind, emb_mat = load_emb(EMB_FILE_PATH)
