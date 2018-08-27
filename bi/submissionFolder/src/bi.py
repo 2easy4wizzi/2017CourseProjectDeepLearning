@@ -9,10 +9,9 @@ import logging
 from collections import defaultdict
 import io
 import datetime
-
-import sys
 # import tensorflow.contrib as contrib
 import matplotlib.pyplot as plt
+# import sys
 # # next 2 lines will work only on jupyter notebook
 from IPython import get_ipython
 if get_ipython() is not None:
@@ -21,29 +20,38 @@ logging.getLogger().setLevel(logging.INFO)
 
 MINIMUM_ROW_LENGTH = 25
 MAXIMUM_ROW_LENGTH = 150
-GRU_HIDDEN_UNITS = 300
 CELL_TYPE = 'GRU'
 EPOCHS = 10
+
+# # model_less_overfit params
+# GRU_HIDDEN_UNITS = 100
+# BATCH_SIZE = 400
+# KEEP_PROB = 0.15
+
+# model_best_acc params: acc will be around 56.888 (original run)
+# 1 check 61.354
+# 2 check 61.654
+# 3 check
+# 4 check
+# 5 check
+GRU_HIDDEN_UNITS = 300
 BATCH_SIZE = 200
 KEEP_PROB = 0.5
-SHOULD_SAVE = True
+MODEL_PATH = '../model_best_acc/model.ckpt'
 
 PRO_FLD = '../'
 DATA_DIR = 'input/'
 EMB_FILE = 'glove.6B.300d.txt'
 EMB_DIM = 300
 EMB_FILE_PATH = PRO_FLD + DATA_DIR + EMB_FILE
-# DATA_FILE = '2way_rus_usa_v2_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '4way_tur_ger_rus_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '5way_tur_ger_rus_fra_usa{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE = '5way_tur_ger_rus_fra_usa100K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
-# DATA_FILE = '5way_rus_fra_usa_aus_ire_200K_{}-{}'.format(MINIMUM_ROW_LENGTH, MAXIMUM_ROW_LENGTH)
 DATA_FILE_PATH = PRO_FLD + DATA_DIR + DATA_FILE + '.txt'
 COUNT_WORD = 20  # if a sentence has COUNT_WORD of the same word - it's a bad sentence (just a troll)
 
-MODEL_PATH = '../model_1535375098/model.ckpt'  # Should set it to model path if TRAIN = False
+SHOULD_SAVE = False
+
 USE_TMP_FOLDER = False
-TRAIN = True
+TRAIN = False
 TEST = True
 
 # uncomment for local run
