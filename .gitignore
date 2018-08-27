@@ -28,3 +28,4 @@ bi/src/__pycache__/bi.cpython-35.pyc
 bi/src/__pycache__/text_cnn_rnn.cpython-35.pyc
 bi/input/5way_tur_ger_rus_fra_usa100K_25-150.csv.zip
 bi/trained_results_temp/*
+bi/~WRL2679.tmp
