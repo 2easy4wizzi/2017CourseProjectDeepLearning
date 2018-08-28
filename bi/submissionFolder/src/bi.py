@@ -11,7 +11,7 @@ import io
 import datetime
 # import tensorflow.contrib as contrib
 import matplotlib.pyplot as plt
-# import sys
+import sys
 # # next 2 lines will work only on jupyter notebook
 from IPython import get_ipython
 if get_ipython() is not None:
@@ -25,7 +25,7 @@ EPOCHS = 10
 
 # # model_less_overfit params: acc will be around 55.716 (original run)
 # 1 check 59.28
-# 2 check
+# 2 check 59.654
 # 3 check
 # 4 check
 # 5 check
@@ -543,6 +543,7 @@ if __name__ == '__main__':
     print("Entering function __main__")
     total_start_time, trn_acc, tst_acc, best_epoch = time.time(), 0, 0, 0
     grp_trn_loss, grp_dev_loss, grp_tst_loss, grp_trn_acc, grp_dev_acc, grp_tst_acc = [], [], [], [], [], []
+    
     # print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', a, b, c)
     #
     # sys.exit(0)
