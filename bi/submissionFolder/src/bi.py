@@ -543,7 +543,7 @@ if __name__ == '__main__':
     print("Entering function __main__")
     total_start_time, trn_acc, tst_acc, best_epoch = time.time(), 0, 0, 0
     grp_trn_loss, grp_dev_loss, grp_tst_loss, grp_trn_acc, grp_dev_acc, grp_tst_acc = [], [], [], [], [], []
-    
+
     # print_graph('loss/epochs(train in red, validation in green, test(constant) in blue)', 'epochs', 'loss', a, b, c)
     #
     # sys.exit(0)
