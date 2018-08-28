@@ -33,3 +33,4 @@ bi/input/5way_rus_fra_usa_aus_ire_200K_25-150.txt
 bi/submissionFolder/input/5way_tur_ger_rus_fra_usa100K_25-150.txt
 bi/submissionFolder/input/glove.6B.300d.txt
 bi/submissionFolder/model_best_acc/*
+bi/submissionFolder/model_less_overfit/*

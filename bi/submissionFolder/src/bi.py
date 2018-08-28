@@ -23,21 +23,27 @@ MAXIMUM_ROW_LENGTH = 150
 CELL_TYPE = 'GRU'
 EPOCHS = 10
 
-# # model_less_overfit params
-# GRU_HIDDEN_UNITS = 100
-# BATCH_SIZE = 400
-# KEEP_PROB = 0.15
-
-# model_best_acc params: acc will be around 56.888 (original run)
-# 1 check 61.354
-# 2 check 61.654
+# # model_less_overfit params: acc will be around 55.716 (original run)
+# 1 check 59.28
+# 2 check
 # 3 check
 # 4 check
 # 5 check
-GRU_HIDDEN_UNITS = 300
-BATCH_SIZE = 200
-KEEP_PROB = 0.5
-MODEL_PATH = '../model_best_acc/model.ckpt'
+GRU_HIDDEN_UNITS = 100
+BATCH_SIZE = 400
+KEEP_PROB = 0.15
+MODEL_PATH = '../model_less_overfit/model.ckpt'
+
+# # model_best_acc params: acc will be around 56.888 (original run)
+# # 1 check 61.354
+# # 2 check 61.654
+# # 3 check
+# # 4 check
+# # 5 check
+# GRU_HIDDEN_UNITS = 300
+# BATCH_SIZE = 200
+# KEEP_PROB = 0.5
+# MODEL_PATH = '../model_best_acc/model.ckpt'
 
 PRO_FLD = '../'
 DATA_DIR = 'input/'
